@@ -148,8 +148,6 @@ set(CMAKE_CXX_STANDARD 17) #torch编译加速
 add_executable(state_from_gazebo src/state_from_gazebo.cpp)
 target_link_libraries(state_from_gazebo ${catkin_LIBRARIES})
 
-add_executable(odometry_transform src/odometry_transform.cpp)
-target_link_libraries(odometry_transform ${catkin_LIBRARIES})
 
 add_executable(junior_ctrl src/main.cpp ${SRC_LIST})
 target_link_libraries(junior_ctrl ${TORCH_LIBRARIES})
