@@ -46,7 +46,9 @@
         </include>
         <!-- environment blocks, obstacles or stairs -->
         <include>
-            <uri>model:///home/cjh/unitree_ws/src/unitree_guide/unitree_ros/unitree_gazebo/worlds/Building</uri>
+            <!-- <uri>/home/cjh/unitree_ws/src/unitree_guide/unitree_ros/unitree_gazebo/worlds/Building</uri> -->
+            <uri>model://Building</uri>
+            <!-- <uri>model:///home/cjh/unitree_ws/src/unitree_guide/unitree_ros/unitree_gazebo/worlds/Building</uri> -->
             <pose>0 0 0 0 0 0</pose>   <!-- 模型位姿（x,y,z,r,p,y），默认放在原点 -->
         </include>
 

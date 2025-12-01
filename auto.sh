@@ -38,6 +38,8 @@ echo "Launching ROS nodes..."
 
 # 启动 gazeboSim.launch
 sleep 2s
+#将地图模型添加到环境变量中
+export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:$(rospack find unitree_gazebo)/models
 roslaunch unitree_guide gazeboSim.launch user_debug:=False rname:=a1&
 LAUNCH_PID=$!
 if [ $? -eq 0 ]; then
@@ -46,7 +48,6 @@ else
     echo "Failed to launch gazeboSim.launch. Exiting."
     exit 1
 fi
-
 
 #Step 4:打开雷达工作空间，并打开雷达fast-lio节点
 # sleep 2s
