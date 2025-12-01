@@ -15,7 +15,7 @@
 3.  **PCT-planner**放在src文件夹外，单独编译
 
 ### 安装
-1.  修改ros工作目录**src/unitree_guide/unitree_guide/unitree_guide/src/FSMState_RL_test.cpp**中的**model_path**为**unitree_guide/logs**中的模型绝对路径
+1.  修改ros工作目录**src/unitree_guide/unitree_guide/unitree_guide/src/FSM/State_RL_test.cpp**中的**model_path**为**unitree_guide/logs**中的模型绝对路径
 2.  修改ros工作目录**src/unitree_guide/unitree_guide/unitree_guide/CMakeLists.txt**中的libtorch路径以及**CMAKE_CUDA_COMPILER**路径
 3. 进入工作空间进行**catkin_make**
 4. 配置PCT-planner，请参考官方教程[PCT_planner](https://github.com/byangw/PCT_planner.git)
