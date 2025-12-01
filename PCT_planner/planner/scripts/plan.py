@@ -22,19 +22,11 @@ cfg = Config()
 
 cluster_pub= rospy.Publisher('/path_markers', MarkerArray, queue_size=10)  # 新增发布器
 
-
-if args.scene == 'Spiral':
-    tomo_file = 'spiral0.3_2'
-    start_pos = np.array([-16.0, -6.0], dtype=np.float32)
-    end_pos = np.array([-26.0, -5.5], dtype=np.float32)
-elif args.scene == 'Building':
+if args.scene == 'Building':
     tomo_file = 'building2_9'
-    start_pos = np.array([-5.5, 7], dtype=np.float32)
-    end_pos = np.array([0, 3], dtype=np.float32)
-else:
-    tomo_file = 'plaza3_10'
-    start_pos = np.array([5, 6.5], dtype=np.float32)
-    end_pos = np.array([0, 0], dtype=np.float32)
+    start_pos = np.array([-5.5, 6, 0.5], dtype=np.float32)
+    end_pos = np.array([5, 0, 7], dtype=np.float32)
+
 
 path_pub = rospy.Publisher("/pct_path", Path, latch=True, queue_size=1)
 
@@ -64,9 +56,9 @@ def publish_culster_marker():
                     marker.id = i  # 为每个 Marker 设置唯一 ID
                     marker.type = Marker.SPHERE
                     marker.action = Marker.ADD
-                    marker.scale.x = 0.5
-                    marker.scale.y = 0.5
-                    marker.scale.z = 0.5
+                    marker.scale.x = 0.2
+                    marker.scale.y = 0.2
+                    marker.scale.z = 0.2
                     marker.color.r = 1
                     marker.color.g = 0
                     marker.color.b = 0.0
@@ -77,7 +69,7 @@ def publish_culster_marker():
                     marker.pose.position.y = pos[1]
                     marker.pose.position.z = 0.5
                     if i==1:
-                        marker.pose.position.z = 1
+                        marker.pose.position.z = end_pos[2]
                     #将最近的kmeans-cluster点发送
                     marker_array.markers.append(marker)  # 添加到 MarkerArray
                 cluster_pub.publish(marker_array)  # 发布 MarkerArray
