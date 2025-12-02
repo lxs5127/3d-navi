@@ -36,7 +36,7 @@ source ./devel/setup.bash
 ```
 3.  控制器，按键2站立后，按键6切换为RL模式，此时接收cmd_vel消息，再次2后会闪退需要重新打开控制器
 
-4.  打开ego-planner，[3d_nav_goal](https://github.com/LiiXZ/rviz-3d-navi-goal-tool)需要先在rviz添加这个插件
+4.  打开ego-planner，[3d_navi_goal](https://github.com/LiiXZ/rviz-3d-navi-goal-tool)需要先在rviz添加这个插件
 ```
 source ./devel/setup.bash
 roslaunch ego_planner run_in_sim.launch #局部导航模块
@@ -56,7 +56,7 @@ cd tomography/scripts/
 python3 tomography.py --scene Building
 ###################################
 cd planner/scripts/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/YOUR-NAME/3d-nav/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/YOUR-NAME/3d-navi/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
 python3 plan.py --scene Building
 ```
 ### 注意
