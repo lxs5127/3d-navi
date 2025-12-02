@@ -25,7 +25,7 @@ cluster_pub= rospy.Publisher('/path_markers', MarkerArray, queue_size=10)  # 新
 if args.scene == 'Building':
     tomo_file = 'building2_9'
     start_pos = np.array([-5.5, 6, 0.5], dtype=np.float32)
-    end_pos = np.array([5, 0, 7], dtype=np.float32)
+    end_pos = np.array([2, -3, 7], dtype=np.float32)
 
 
 path_pub = rospy.Publisher("/pct_path", Path, latch=True, queue_size=1)
