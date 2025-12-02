@@ -73,6 +73,6 @@ python3 plan.py --scene Building
 
 
 ### Communication
-如需帮助，若本项目对你有帮助，请给我点个star，谢谢！
+若本项目对你有帮助，不妨给我点个star，谢谢！
 bilibil: https://space.bilibili.com/29152879
 email: 1906570332@qq.com
