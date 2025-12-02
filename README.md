@@ -1,7 +1,7 @@
-# 3d_nav
+# 3d_navi
 
 ### 介绍
-本项目为gazebo仿真认证[PCT-planner](https://github.com/byangw/PCT_planner.git) & [ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git)，使用robot unitree a1机器人，以及强化学习控制器[chy2948331536/unitree_guide](https://gitee.com/chy2948331536/unitree_guide)，控制器和PCT-planner需要CUDA
+本项目为gazebo仿真验证[PCT-planner](https://github.com/byangw/PCT_planner.git) & [ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git)，使用robot unitree a1机器人，以及强化学习控制器[chy2948331536/unitree_guide](https://gitee.com/chy2948331536/unitree_guide)，控制器和PCT-planner需要CUDA
 
 
 <div align="center">
@@ -36,7 +36,7 @@ source ./devel/setup.bash
 ```
 3.  控制器，按键2站立后，按键6切换为RL模式，此时接收cmd_vel消息，再次2后会闪退需要重新打开控制器
 
-4.  打开ego-planner，[3d_nav_goal](https://github.com/LiiXZ/rviz-3d-nav-goal-tool)需要先在rviz添加这个插件
+4.  打开ego-planner，[3d_nav_goal](https://github.com/LiiXZ/rviz-3d-navi-goal-tool)需要先在rviz添加这个插件
 ```
 source ./devel/setup.bash
 roslaunch ego_planner run_in_sim.launch #局部导航模块
@@ -56,7 +56,7 @@ cd tomography/scripts/
 python3 tomography.py --scene Building
 ###################################
 cd planner/scripts/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:planner/lib/3rdparty/gtsam-4.1.1/install/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/YOUR-NAME/3d-nav/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
 python3 plan.py --scene Building
 ```
 ### 注意
