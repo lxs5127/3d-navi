@@ -235,7 +235,7 @@ def main():
     rospy.Subscriber('/scan', PointCloud, mmw_handler, queue_size=10)
     rospy.Subscriber(ODOM_TOPIC, Odometry, odom_callback, queue_size=10)
 
-    pub_laser_livox = rospy.Publisher('/livox/lidar2', CustomMsg, queue_size=10)
+    pub_laser_livox = rospy.Publisher('/livox/lidar', CustomMsg, queue_size=10)
 
     pub_laser_cloud = rospy.Publisher("/livox/Pointcloud2", PointCloud2, queue_size=10)
 
