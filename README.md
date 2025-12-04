@@ -11,9 +11,10 @@
 
 ### 下载
 1.  将代码clone到ros工作目录src下
-2.  其中**unitree_guide**为**unitree a1**的描述文件以及控制器，**planner**为**ego-planner**规划器，**PCT-planner**为三维地图规划器，**Mid360_imu_sim**为**livox_msg_mid360**的仿真包
-3.  **PCT-planner**放在src文件夹外，单独编译
-4.  本项目支持使用Fast-lio，**.auto.sh**自动发布**livox/lidar**与**livox/imu**话题，**tf关系**需要自己添加
+2.  下载c++版本的[libtorch](https://pytorch.org/)
+3.  其中**unitree_guide**为**unitree a1**的描述文件以及控制器，**planner**为**ego-planner**规划器，**PCT-planner**为三维地图规划器，**Mid360_imu_sim**为**livox_msg_mid360**的仿真包
+4.  **PCT-planner**放在src文件夹外，单独编译
+5.  本项目支持使用Fast-lio，**.auto.sh**自动发布**livox/lidar**与**livox/imu**话题，**tf关系**需要自己添加
 
 ### 安装
 1.  修改ros工作目录**src/unitree_guide/unitree_guide/unitree_guide/src/FSM/State_RL_test.cpp**中的**model_path**为**unitree_guide/logs**中的模型绝对路径
