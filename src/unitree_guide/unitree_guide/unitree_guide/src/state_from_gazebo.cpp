@@ -2,12 +2,7 @@
 #include "gazebo_msgs/ModelStates.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "ros/ros.h"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-#include "tf2_ros/buffer.h"
-#include "tf2_ros/transform_broadcaster.h"
 // #include "tf2_ros/transform_listener.h"
-#include <tf/message_filter.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <nav_msgs/Odometry.h>
@@ -29,19 +24,12 @@ void callback_BASE(const gazebo_msgs::LinkStates::ConstPtr &msg) {
         ++index;
     }
     ros::Rate rate(500);//延迟至100hz发布，避免重复发布
-    // tf::StampedTransform transform_odom2map;
-    //等待监听odom坐标系与map坐标系的关系，注意转换的时间戳！！！！
-    // tf_listener_ptr->waitForTransform("odom", "map", ros::Time(0), ros::Duration(0.01));
-    // tf_listener_ptr->lookupTransform("odom", "map",ros::Time(0), transform_odom2map);
 
-    // tf::Point pt_map(msg->pose[index].position.x,msg->pose[index].position.y,msg->pose[index].position.z);
-    // tf::Point pt_odom = transform_odom2map * pt_map;
-
-    static tf::TransformBroadcaster bf2;
+    //map到odom的tf变换
+    static tf::TransformBroadcaster bf1;
     tf::Transform transform_odom2map;
-    tf2::Quaternion qtn;
+    tf::Quaternion qtn;
     qtn.setRPY(roll, pitch, yaw);
-    
     transform_odom2map.setRotation(tf::Quaternion(qtn.x(),
                                          qtn.y(),
                                          qtn.z(),
@@ -49,10 +37,10 @@ void callback_BASE(const gazebo_msgs::LinkStates::ConstPtr &msg) {
     transform_odom2map.setOrigin(tf::Vector3(x,
                                     y,
                                     z));
-
-    bf2.sendTransform(tf::StampedTransform(transform_odom2map, ros::Time::now(), "map", "odom"));
+    // 发布odom到map的tf关系
+    bf1.sendTransform(tf::StampedTransform(transform_odom2map, ros::Time::now(), "map", "odom"));
     
-    //求变化矩阵的逆解，用于推算map到odom的关系，以便能得到base到map的关系
+    //求变化矩阵的逆解，用于推算map到odom的关系，以便能得到base到map的关系，及
     tf::Transform transform_map2odom = transform_odom2map.inverse();
 
     tf::Point pt_map(msg->pose[index].position.x,msg->pose[index].position.y,msg->pose[index].position.z);
@@ -64,35 +52,52 @@ void callback_BASE(const gazebo_msgs::LinkStates::ConstPtr &msg) {
                         msg->pose[index].orientation.w);
     tf::Quaternion q_odom = transform_map2odom.getRotation() * q_map;
 
-    static tf::TransformBroadcaster bf;
+    // 转换为odom的速度关系
+    tf::Vector3 linear_vel(
+        msg->twist[index].linear.x,
+        msg->twist[index].linear.y,
+        msg->twist[index].linear.z);
+    tf::Vector3 transformed_linear_vel = transform_map2odom * linear_vel;
+
+    tf::Vector3 angular_vel(
+        msg->twist[index].angular.x,
+        msg->twist[index].angular.y,
+        msg->twist[index].angular.z);
+    tf::Vector3 transformed_angular_vel = transform_map2odom * angular_vel;
+    
+    //发布base到odom的tf变换
+    static tf::TransformBroadcaster bf2;
     tf::Transform transform_odom2base;
     transform_odom2base.setRotation(q_odom);
     transform_odom2base.setOrigin(pt_odom);
 
-    bf.sendTransform(tf::StampedTransform(transform_odom2base, ros::Time::now(), "odom", "base"));
+    bf2.sendTransform(tf::StampedTransform(transform_odom2base, ros::Time::now(), "odom", "base"));
 
     Odom.header.stamp = ros::Time::now();
     Odom.header.frame_id = "odom";
     Odom.child_frame_id = "base";
 
     // set the position
-    Odom.pose.pose.position.x = msg->pose[index].position.x;
-    Odom.pose.pose.position.y = msg->pose[index].position.y;
-    Odom.pose.pose.position.z = msg->pose[index].position.z;
+    Odom.pose.pose.position.x = pt_odom.x();
+    Odom.pose.pose.position.y = pt_odom.y();
+    Odom.pose.pose.position.z = pt_odom.z();
 
-    Odom.pose.pose.orientation.w = msg->pose[index].orientation.w ;
-    Odom.pose.pose.orientation.x = msg->pose[index].orientation.x ;
-    Odom.pose.pose.orientation.y = msg->pose[index].orientation.y ;
-    Odom.pose.pose.orientation.z = msg->pose[index].orientation.z ;
+    Odom.pose.pose.orientation.w = q_odom.w();
+    Odom.pose.pose.orientation.x = q_odom.x();
+    Odom.pose.pose.orientation.y = q_odom.y();
+    Odom.pose.pose.orientation.z = q_odom.z();
+
 
     // set the velocity
-    Odom.twist.twist.linear.x = msg->twist[index].linear.x;
-    Odom.twist.twist.linear.y = msg->twist[index].linear.y;
-    Odom.twist.twist.linear.z = msg->twist[index].linear.z;
+    Odom.twist.twist.linear.x= transformed_linear_vel.x();
+    Odom.twist.twist.linear.x= transformed_linear_vel.y();
+    Odom.twist.twist.linear.x= transformed_linear_vel.z();
 
-    Odom.twist.twist.angular.x =msg->twist[index].angular.x;
-    Odom.twist.twist.angular.y =msg->twist[index].angular.y;
-    Odom.twist.twist.angular.z =msg->twist[index].angular.z;
+
+    Odom.twist.twist.angular.x = transformed_angular_vel.x();
+    Odom.twist.twist.angular.x = transformed_angular_vel.y();
+    Odom.twist.twist.angular.x = transformed_angular_vel.z();
+
 
     robotVelocity_BASE_frame_pub.publish(Odom);
     rate.sleep();
