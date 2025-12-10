@@ -235,9 +235,8 @@ namespace ego_planner
             {
               Eigen::Vector3d next_point =(sample_length - pseudo_arc_length[id]) / (pseudo_arc_length[id + 1] - pseudo_arc_length[id]) * segment_point[id + 1] +
                                   (pseudo_arc_length[id + 1] - sample_length) / (pseudo_arc_length[id + 1] - pseudo_arc_length[id]) * segment_point[id];
-              cout<<"next_point: "<<next_point.transpose()<<endl;
-              //增加對z軸約束，約定規劃點的最低高度不得低與機器人
-              // next_point(2)=1.0;
+              // cout<<"next_point: "<<next_point.transpose()<<endl;
+              //将初始轨迹抬高
               point_set.push_back(next_point);               
               sample_length += cps_dist;
             }
@@ -261,10 +260,12 @@ namespace ego_planner
       
     } while (flag_regenerate);
 
+    //强制抬起point_set的z坐标
+
     Eigen::MatrixXd ctrl_pts;
     
     UniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, ctrl_pts);
-
+    
     //计算astar路径
     vector<vector<Eigen::Vector3d>> a_star_pathes;
     //astar路径由贝塞尔曲线优化初始化得到

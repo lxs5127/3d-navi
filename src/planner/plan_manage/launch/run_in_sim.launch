@@ -41,12 +41,12 @@
     <arg name="max_acc" value="2" />
 
     <!--always set to 1.5 times grater than sensing horizen-->
-    <arg name="planning_horizon" value="2" /> 
+    <arg name="planning_horizon" value="5" /> 
 
     <!-- 1: use 2D Nav Goal to select goal  -->
     <!-- 2: use global waypoints below  -->
     <!-- 3: use move_base path waypoints below  -->
-    <arg name="flight_type" value="3" />
+    <arg name="flight_type" value="1" />
     
     <!-- global waypoints -->
     <!-- It generates a piecewise min-snap traj passing all waypoints -->

@@ -7,7 +7,6 @@ namespace ego_planner
   PlanningVisualization::PlanningVisualization(ros::NodeHandle &nh)
   {
     node = nh;
-
     goal_point_pub = nh.advertise<visualization_msgs::Marker>("goal_point", 2);
     global_list_pub = nh.advertise<visualization_msgs::Marker>("global_list", 2);
     init_list_pub = nh.advertise<visualization_msgs::Marker>("init_list", 2);

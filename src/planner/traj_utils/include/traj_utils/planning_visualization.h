@@ -27,6 +27,7 @@ namespace ego_planner
     ros::Publisher a_star_list_pub;
     ros::Publisher guide_vector_pub;
     ros::Publisher intermediate_state_pub;
+    std::string frame_id_;
 
   public:
     PlanningVisualization(/* args */) {}

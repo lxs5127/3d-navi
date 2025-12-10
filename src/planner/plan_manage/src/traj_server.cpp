@@ -36,7 +36,7 @@ ros::Time start_time_;
 double last_yaw_=0, last_yaw_dot_=0;
 double time_forward_;
 
-geometry_msgs::Pose odom_Pose;
+geometry_msgs::Pose odom2map_Pose;
 Eigen::Vector3d end_pt_,end_euler_; // goal state
 
 ros::Publisher control_point_state_pub_;
@@ -102,14 +102,39 @@ double LimitSpeed(const double vel_input,const double upper,const double lower)
 
 void odometryCallback(const nav_msgs::OdometryConstPtr &msg,tf::TransformListener* tf_listener_ptr)
 {
-  odom_Pose.position.x = msg->pose.pose.position.x;
-  odom_Pose.position.y = msg->pose.pose.position.y;
-  odom_Pose.position.z = msg->pose.pose.position.z;
 
-  odom_Pose.orientation.x = msg->pose.pose.orientation.x;
-  odom_Pose.orientation.y = msg->pose.pose.orientation.y;
-  odom_Pose.orientation.z = msg->pose.pose.orientation.z;
-  odom_Pose.orientation.w = msg->pose.pose.orientation.w;
+  try
+  {
+    // 则当前odom_pos_为base与map的关系
+    tf::StampedTransform transform_odom2map;
+    tf_listener_ptr->lookupTransform("map", msg->header.frame_id,
+                                ros::Time(0), transform_odom2map);
+    // 位置变换    
+    tf::Point pt_odom(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
+    tf::Point pt_map = transform_odom2map * pt_odom;
+
+    odom2map_Pose.position.x = pt_map.x();
+    odom2map_Pose.position.y = pt_map.y();
+    odom2map_Pose.position.z = pt_map.z();
+
+                                
+    // 速度变换（线速度需要旋转到 map 坐标系）
+    tf::Quaternion q_odom(msg->pose.pose.orientation.x,
+                    msg->pose.pose.orientation.y,
+                    msg->pose.pose.orientation.z,
+                    msg->pose.pose.orientation.w);
+    tf::Quaternion q_map = transform_odom2map.getRotation() * q_odom;
+    odom2map_Pose.orientation.x = q_map.x();
+    odom2map_Pose.orientation.y = q_map.y();
+    odom2map_Pose.orientation.z = q_map.z();
+    odom2map_Pose.orientation.w = q_map.w();
+
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << e.what() << '\n';
+    return;
+    }
 }
 
 
@@ -120,15 +145,16 @@ std::pair<double, double> calculate_yaw(double t_cur)
   double min_close_distance=1.0;
   constexpr double PI = 3.1415926;
   //获取当前机器人偏航角，与当前位置
-  double yaw_robot = tf::getYaw(odom_Pose.orientation);
+  double yaw_robot = tf::getYaw(odom2map_Pose.orientation);
   double yaw_control_point = tf::getYaw(control_point_state.pose.pose.orientation);
 
-  Eigen::Vector3d current_pos=Eigen::Vector3d(odom_Pose.position.x,odom_Pose.position.y,odom_Pose.position.z);
+  Eigen::Vector3d current_pos=Eigen::Vector3d(odom2map_Pose.position.x,odom2map_Pose.position.y,odom2map_Pose.position.z);
 
   //当位置接近于目标，使用终点的偏航角
   yaw_diff=((end_pt_ - current_pos).norm()<min_close_distance? end_euler_(2):yaw_control_point) - yaw_robot;
 
-  // cout<<"distance to goal:"<< (end_pt_ - current_pos).norm()<<endl;
+  cout<<"distance to goal:"<< (end_pt_ - current_pos).norm()<<endl;
+  cout<<"end_euler_(2)"<< end_euler_(2)*180/3.14 <<endl;
   while (yaw_diff > PI)  yaw_diff -= 2 * PI;
   while (yaw_diff < -PI) yaw_diff += 2 * PI;
 
@@ -162,7 +188,9 @@ void waypointCallback(const nav_msgs::PathConstPtr &msg)
     msg->poses.back().pose.orientation.y,  // 虚部 y
     msg->poses.back().pose.orientation.z   // 虚部 z
   );
+  cout << "end_euler_ " << msg->poses.back().pose.orientation << endl;
   end_euler_ =end_qtn_.matrix().eulerAngles(0,1,2);
+  cout << "end_euler_ " << end_euler_ .transpose()<< endl;
 }
 
 
@@ -252,10 +280,10 @@ void cmdCallback(const ros::TimerEvent &e)
   Eigen::Matrix<double, 3, 1> baseAngularVelBodyCur;
   
   // cout << "position: " << basePosWorldCur[0] << "  " << basePosWorldCur[1] << "  " << basePosWorldCur[2] <<endl;
-  baseOriWorldCur.w() = odom_Pose.orientation.w;
-  baseOriWorldCur.x() = odom_Pose.orientation.x;
-  baseOriWorldCur.y() = odom_Pose.orientation.y;
-  baseOriWorldCur.z() = odom_Pose.orientation.z;
+  baseOriWorldCur.w() = odom2map_Pose.orientation.w;
+  baseOriWorldCur.x() = odom2map_Pose.orientation.x;
+  baseOriWorldCur.y() = odom2map_Pose.orientation.y;
+  baseOriWorldCur.z() = odom2map_Pose.orientation.z;
 
   baseLinearVelWorldCur[0]  = velWorld.linear.x;
   baseLinearVelWorldCur[1]  = velWorld.linear.y;
@@ -276,7 +304,7 @@ void cmdCallback(const ros::TimerEvent &e)
   robotVelocity_BASE_frame.angular.y = 0;
   robotVelocity_BASE_frame.angular.z = baseAngularVelBodyCur[2];
 
-  cout << "current_pos: " << odom_Pose.position.x<<"   "<<odom_Pose.position.y <<endl;
+  cout << "current_pos: " << odom2map_Pose.position.x<<"   "<<odom2map_Pose.position.y <<endl;
   cout << "future_pos: " << control_point_state.pose.pose.position.x<<"   "<<control_point_state.pose.pose.position.y <<endl;
   cout << "velocity: " << robotVelocity_BASE_frame.linear.x << "  " << robotVelocity_BASE_frame.angular.y <<endl;
   cout << "yaw_velocity: " << robotVelocity_BASE_frame.angular.z<<endl;

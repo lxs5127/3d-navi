@@ -747,6 +747,10 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
     std::cout << "no odom!" << std::endl;
     return;
   }
+  //點雲轉換關係
+  tf::StampedTransform transform_odom2map;
+  tf_listener_.lookupTransform("map", img->header.frame_id,
+                              ros::Time(0), transform_odom2map);
 
   // 如果点云为空，则直接返回
   if (latest_cloud.points.size() == 0)
@@ -755,13 +759,13 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
   // 检查相机位置是否有效（包含NaN值）
   if (isnan(md_.camera_pos_(0)) || isnan(md_.camera_pos_(1)) || isnan(md_.camera_pos_(2)))
     return;
-  
 
   // 根据相机位置和局部更新范围重置缓冲区
   this->resetBuffer(md_.camera_pos_ - mp_.local_update_range_,
                     md_.camera_pos_ + mp_.local_update_range_);
 
   pcl::PointXYZ pt;  // 点云中的单个点
+  tf::Point pt_trans;  // 转换后的点
   Eigen::Vector3d p3d, p3d_inf;  // 3D点及其膨胀后的点
 
   // 计算障碍物膨胀的步长
@@ -804,6 +808,10 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
             p3d_inf(0) = pt.x + x * mp_.resolution_;
             p3d_inf(1) = pt.y + y * mp_.resolution_;
             p3d_inf(2) = pt.z + z * mp_.resolution_;
+
+            tf::Point tf_pt = transform_odom2map * tf::Point(p3d_inf.x(), p3d_inf.y(), p3d_inf.z());
+            p3d_inf = Eigen::Vector3d(tf_pt.x(), tf_pt.y(), tf_pt.z());
+
 
             max_x = max(max_x, p3d_inf(0));
             max_y = max(max_y, p3d_inf(1));

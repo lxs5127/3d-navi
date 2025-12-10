@@ -23,6 +23,9 @@
 #include <message_filters/time_synchronizer.h>
 
 #include <plan_env/raycast.h>
+#include <pcl_ros/transforms.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 
 #define logit(x) (log((x) / (1 - (x))))
 
@@ -184,7 +187,7 @@ public:
 private:
   MappingParameters mp_;
   MappingData md_;
-
+  tf::TransformListener tf_listener_;
   // get depth image and camera pose
   void depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
                          const geometry_msgs::PoseStampedConstPtr& pose);

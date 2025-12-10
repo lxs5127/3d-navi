@@ -80,7 +80,7 @@ namespace ego_planner
 
     for (size_t i = 0; i < (size_t)waypoint_num_; i++)
     {
-      visualization_->displayGoalPoint(wps[i], Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, i);
+      // visualization_->displayGoalPoint(wps[i], Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, i);
       ros::Duration(0.001).sleep();
     }
 
@@ -137,6 +137,8 @@ namespace ego_planner
 
     double min_dist = 0.8;  // 下采样：每隔 0.8m 保留一个点（避免点太密）
     Eigen::Vector3d last_wp;
+    //添加最后终点
+    end_pt_ << msg->poses.back().pose.position.x, msg->poses.back().pose.position.y, msg->poses.back().pose.position.y;
     bool first = true;
 
     for (const auto& pose_stamped : msg->poses)
@@ -165,7 +167,7 @@ namespace ego_planner
 
     for (size_t i = 0; i < (size_t)msg->poses.size(); i++)
     {
-      visualization_->displayGoalPoint(waypoints[i], Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, i);
+      // visualization_->displayGoalPoint(waypoints[i], Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, i);
       ros::Duration(0.001).sleep();
     }
     // === 2. 计划轨迹 ===
@@ -188,12 +190,15 @@ namespace ego_planner
       have_new_target_ = true;
 
       /*** FSM ***/
-      // if (exec_state_ == WAIT_TARGET)
-      changeFSMExecState(GEN_NEW_TRAJ, "TRIG");
-      // else if (exec_state_ == EXEC_TRAJ)
-      //   changeFSMExecState(REPLAN_TRAJ, "TRIG");
-
-      // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
+      if (exec_state_ == WAIT_TARGET)
+      {
+        changeFSMExecState(GEN_NEW_TRAJ, "TRIG");
+      }
+      else if (exec_state_ == EXEC_TRAJ)
+      {
+        changeFSMExecState(REPLAN_TRAJ, "TRIG");
+      }
+      visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
       ros::Duration(0.001).sleep();
       visualization_->displayGlobalPathList(gloabl_traj, 0.1, 0);
       ros::Duration(0.001).sleep();
@@ -216,11 +221,10 @@ namespace ego_planner
 
     bool success = false;
     end_pt_ << msg->poses[0].pose.position.x, msg->poses[0].pose.position.y, odom_pos_(2); //twilight: goal height
-
     success = planner_manager_->planGlobalTraj(odom_pos_, odom_vel_, Eigen::Vector3d::Zero(), end_pt_, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
     std::cout<<"run_flag"<<success<<std::endl;
 
-    visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
+    // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
 
     if (success)
     {
@@ -266,42 +270,29 @@ namespace ego_planner
     odom_vel_=Eigen::Vector3d(msg->twist.twist.linear.x, msg->twist.twist.linear.y, 0);
     // odom_acc_ = estimateAcc( msg );
     have_odom_ = true;
-
    //将当前位姿从odom坐标系转换到map坐标系
-    // tf::Stamped<tf::Pose> tf_pose;
-    // tf::poseMsgToTF(msg->pose.pose, tf_pose);
-    // try
-    // {
-    //   /* code */
-    //   tf::StampedTransform transform;
-    //   tf_listener_.lookupTransform("map", msg->header.frame_id,
-    //                              msg->header.stamp, transform);
-    //   // 位置变换                         
-    //   tf::Point pt_odom(odom_pos_(0), odom_pos_(1), odom_pos_(2));
-    //   tf::Point pt_map = transform * pt_odom;
-
-    //   odom_pos_= Eigen::Vector3d(pt_map.x(), pt_map.y(), pt_map.z());
-
-
-    //   // 姿态变换（odom → map）
-    //   tf::Quaternion q_odom(msg->pose.pose.orientation.x,
-    //                         msg->pose.pose.orientation.y,
-    //                         msg->pose.pose.orientation.z,
-    //                         msg->pose.pose.orientation.w);
-    //   tf::Quaternion q_map = transform.getRotation() * q_odom;
-    //   odom_orient_ = Eigen::Quaterniond(q_map.w(), q_map.x(), q_map.y(), q_map.z());
+    try
+    {
+      // 则当前odom_pos_为base与map的关系
+      tf::StampedTransform transform_odom2map;
+      tf_listener_.lookupTransform("map", msg->header.frame_id,
+                                 ros::Time(0), transform_odom2map);
+      // 位置变换    
+      tf::Point pt_odom(odom_pos_(0), odom_pos_(1), odom_pos_(2));
+      tf::Point pt_map = transform_odom2map * pt_odom;
+      odom_pos_= Eigen::Vector3d(pt_map.x(), pt_map.y(), pt_map.z());
                                  
-    //   // 速度变换（线速度需要旋转到 map 坐标系）
-    //   tf::Vector3 vel_odom(odom_vel_(0), odom_vel_(1), odom_vel_(2));
-    //   tf::Vector3 vel_map = transform.getBasis() * vel_odom;  // 只旋转，不平移
-    //   odom_vel_= Eigen::Vector3d(vel_map.x(), vel_map.y(), vel_map.z());
+      // 速度变换（线速度需要旋转到 map 坐标系）
+      tf::Vector3 vel_odom(odom_vel_(0), odom_vel_(1), odom_vel_(2));
+      tf::Vector3 vel_map = transform_odom2map.getBasis() * vel_odom;  // 只旋转，不平移
+      odom_vel_= Eigen::Vector3d(vel_map.x(), vel_map.y(), vel_map.z());
 
-    // }
-    // catch(const std::exception& e)
-    // {
-    //   std::cerr << e.what() << '\n';
-    //   return;
-    // }
+    }
+    catch(const std::exception& e)
+    {
+      std::cerr << e.what() << '\n';
+      return;
+    }
   }
 
   void EGOReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call)
@@ -380,10 +371,6 @@ namespace ego_planner
       start_vel_ = odom_vel_;
       start_acc_.setZero();
 
-      // Eigen::Vector3d rot_x = odom_orient_.toRotationMatrix().block(0, 0, 3, 1);
-      // start_yaw_(0)         = atan2(rot_x(1), rot_x(0));
-      // start_yaw_(1) = start_yaw_(2) = 0.0;
-
       bool flag_random_poly_init;
       if (timesOfConsecutiveStateCalls().first == 1)
         flag_random_poly_init = false;
@@ -426,44 +413,7 @@ namespace ego_planner
     case EXEC_TRAJ:
     {
       cout << "Executing... "<< endl;
-      // /* determine if need to replan */
-      // LocalTrajData *info = &planner_manager_->local_data_;
-      // // info->start_pos_ = odom_pos_;
-
-      // ros::Time time_now = ros::Time::now();
-      // double t_cur = (time_now - info->start_time_).toSec();
-      // t_cur = min(info->duration_, t_cur);
-
-      // // Eigen::Vector3d pos = info->position_traj_.evaluateDeBoorT(t_cur); //fixme
-
       Eigen::Vector3d pos = odom_pos_;
-
-    //   /* && (end_pt_ - pos).norm() < 0.5 */
-    //   if (t_cur > info->duration_ - 1e-2)
-    //   {
-    //     have_target_ = false;
-    //     cout << "change state to WAIT_TARGET in EXEC_TRAJ state" << endl;
-    //     cout << "near target time " << endl;
-    //     changeFSMExecState(WAIT_TARGET, "FSM");
-    //     return;
-    //   }
-    //   else if ((end_pt_ - pos).norm() < no_replan_thresh_)
-    //   {
-    //     cout << "now near end position" << endl;
-    //     return;
-    //   }
-    //   else if ((info->start_pos_ - pos).norm() < replan_thresh_)
-    //   {
-    //     cout << "near start" << endl;
-    //     return;
-    //   }
-    //   else
-    //   {
-    //     cout << "change state to REPLAN_TRAJ in EXEC_TRAJ state" << endl;
-    //     changeFSMExecState(REPLAN_TRAJ, "FSM");
-    //   }
-    //   break;
-    // }
 
       if ((end_pt_ - pos).norm() < 0.2)
       {
@@ -568,20 +518,6 @@ namespace ego_planner
           changeFSMExecState(EXEC_TRAJ, "SAFETY");
           return;
         }
-        // else
-        // {
-        //   if (t - t_cur < emergency_time_) // 0.8s of emergency time
-        //   {
-        //     ROS_WARN("Suddenly discovered obstacles. emergency stop! time=%f", t - t_cur);
-        //     changeFSMExecState(EMERGENCY_STOP, "SAFETY");
-        //   }
-        //   else
-        //   {
-        //     //ROS_WARN("current traj in collision, replan.");
-        //     changeFSMExecState(REPLAN_TRAJ, "SAFETY");
-        //   }
-        //   return;
-        // }
         break;
       }
     }
