@@ -17,12 +17,11 @@
 5.  本项目支持使用Fast-lio，**.auto.sh**自动发布**livox/lidar**与**livox/imu**话题，**tf关系**需要自己添加
 
 ### 安装
-1.  修改ros工作目录**src/unitree_guide/unitree_guide/unitree_guide/src/FSM/State_RL_test.cpp**中的**model_path**为**unitree_guide/logs**中的模型绝对路径
-2.  修改ros工作目录**src/unitree_guide/unitree_guide/unitree_guide/CMakeLists.txt**中的libtorch路径以及**CMAKE_CUDA_COMPILER**路径
-3.  安装**ego-planner**相关依赖，请参考官方教程[ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git)
-4. 进入工作空间进行**catkin_make**
+1.  修改ros工作目录**src/unitree_guide/unitree_guide/unitree_guide/CMakeLists.txt**中的libtorch路径以及**CMAKE_CUDA_COMPILER**路径
+2.  安装**ego-planner**相关依赖，请参考官方教程[ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git)
+3. 进入工作空间进行**catkin_make**
    
-5. 安装**PCT-planner**相关依赖，请参考官方教程[PCT_planner](https://github.com/byangw/PCT_planner.git)
+4. 安装**PCT-planner**相关依赖，请参考官方教程[PCT_planner](https://github.com/byangw/PCT_planner.git)
 ```
 ## 配置PCT-planner
 cd planner/
