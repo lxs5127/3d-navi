@@ -76,7 +76,6 @@ roslaunch ego_planner ego_rviz.launch  # RVIZ 可视化
 修改 `run_in_sim.launch` 文件中的 `flight_type` 参数可切换导航模式：
 ```xml
 <!-- 1: 使用 2D Nav Goal 设置目标 -->
-<!-- 2: 使用下方定义的全局航点 -->
 <!-- 3: 使用 move_base 的路径 -->
 <arg name="flight_type" value="3" />
 ```
