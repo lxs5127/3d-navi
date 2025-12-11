@@ -11,9 +11,6 @@
 
 ## 下载与依赖
 
-### 下载项目
-1. 将项目代码克隆到 ROS 的 `src` 工作目录下。
-
 ### 依赖项安装
 1. **libtorch**：下载 C++ 版本的 [libtorch](https://pytorch.org/)。
 2. **PCT-planner**：将其放置在 `src` 文件夹外单独编译。
