@@ -34,7 +34,7 @@ catkin_make
 ```
 
 ### 4. 安装 PCT-planner
-请参考 [PCT-planner](https://github.com/byangw/PCT_planner.git) 官方文档安装依赖，或使用以下命令进行编译：
+请参考 [PCT-planner](https://github.com/byangw/PCT_planner.git) 官方文档安装依赖，然后使用以下命令进行编译：
 ```bash
 cd planner/
 ./build_thirdparty.sh
@@ -50,6 +50,7 @@ cd planner/
 ```bash
 sudo -s
 source ./devel/setup.bash
+rosrun unitree_guide virtual_joy.py
 ```
 
 然后启动 Gazebo 仿真环境并运行控制器：
@@ -73,6 +74,7 @@ roslaunch ego_planner ego_rviz.launch  # RVIZ 可视化
 修改 `run_in_sim.launch` 文件中的 `flight_type` 参数可切换导航模式：
 ```xml
 <!-- 1: 使用 2D Nav Goal 设置目标 -->
+<arg name="flight_type" value="1" />
 <!-- 3: 使用 move_base 的路径 -->
 <arg name="flight_type" value="3" />
 ```
@@ -84,7 +86,7 @@ cd tomography/scripts/
 python3 tomography.py --scene Building
 
 cd planner/scripts/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/YOUR-NAME/3d-navi/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:home/YOUR-NAME/3d-navi/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
 python3 plan.py --scene Building
 ```
 
