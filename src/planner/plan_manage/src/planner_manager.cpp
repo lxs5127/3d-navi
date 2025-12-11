@@ -175,15 +175,14 @@ namespace ego_planner
           }
       }
       else{
-
+        //不更新全部距離的軌跡，設定一個盲區距離，若當前點里機器狗太近則不更新軌跡
         double t;
         double t_cur = (ros::Time::now() - local_data_.start_time_).toSec();
-
         vector<double> pseudo_arc_length;
         vector<Eigen::Vector3d> segment_point;
-        
         pseudo_arc_length.push_back(0.0);
         //偽弧長pseudo_arc_length，從當前時間點，計算到觀測終點的累積弧長
+        
         for (t = t_cur; t < local_data_.duration_ + 1e-3; t += ts)
         {
           segment_point.push_back(local_data_.position_traj_.evaluateDeBoorT(t));
@@ -233,6 +232,7 @@ namespace ego_planner
           {
             if (sample_length >= pseudo_arc_length[id] && sample_length < pseudo_arc_length[id + 1])
             {
+              //均勻插值
               Eigen::Vector3d next_point =(sample_length - pseudo_arc_length[id]) / (pseudo_arc_length[id + 1] - pseudo_arc_length[id]) * segment_point[id + 1] +
                                   (pseudo_arc_length[id + 1] - sample_length) / (pseudo_arc_length[id + 1] - pseudo_arc_length[id]) * segment_point[id];
               // cout<<"next_point: "<<next_point.transpose()<<endl;

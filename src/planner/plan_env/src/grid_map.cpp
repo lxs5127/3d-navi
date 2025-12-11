@@ -749,9 +749,13 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
   }
   //點雲轉換關係
   tf::StampedTransform transform_odom2map;
-  tf_listener_.lookupTransform("map", img->header.frame_id,
-                              ros::Time(0), transform_odom2map);
-
+  transform_odom2map.setIdentity();//将变换矩阵初始化为单位阵
+  //将当前位姿从odom坐标系转换到map坐标，如果存在tf变换关系的话
+  if (tf_listener_.waitForTransform("map", img->header.frame_id, ros::Time(0), ros::Duration(3.0)))
+  {
+    tf_listener_.lookupTransform("map", img->header.frame_id,
+                                ros::Time(0), transform_odom2map);
+  }
   // 如果点云为空，则直接返回
   if (latest_cloud.points.size() == 0)
     return;
@@ -811,7 +815,6 @@ void GridMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr &img)
 
             tf::Point tf_pt = transform_odom2map * tf::Point(p3d_inf.x(), p3d_inf.y(), p3d_inf.z());
             p3d_inf = Eigen::Vector3d(tf_pt.x(), tf_pt.y(), tf_pt.z());
-
 
             max_x = max(max_x, p3d_inf(0));
             max_y = max(max_y, p3d_inf(1));

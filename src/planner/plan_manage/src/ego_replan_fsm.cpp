@@ -270,18 +270,22 @@ namespace ego_planner
     odom_vel_=Eigen::Vector3d(msg->twist.twist.linear.x, msg->twist.twist.linear.y, 0);
     // odom_acc_ = estimateAcc( msg );
     have_odom_ = true;
-   //将当前位姿从odom坐标系转换到map坐标系
+   //将当前位姿从odom坐标系转换到map坐标，如果存在tf变换关系的话
     try
     {
       // 则当前odom_pos_为base与map的关系
       tf::StampedTransform transform_odom2map;
+      transform_odom2map.setIdentity();//将变换矩阵初始化为单位阵
+
+      //将当前位姿从odom坐标系转换到map坐标，如果存在tf变换关系的话
+      if (tf_listener_.waitForTransform("map", msg->header.frame_id, ros::Time(0), ros::Duration(3.0)));
       tf_listener_.lookupTransform("map", msg->header.frame_id,
-                                 ros::Time(0), transform_odom2map);
+                                  ros::Time(0), transform_odom2map);
       // 位置变换    
       tf::Point pt_odom(odom_pos_(0), odom_pos_(1), odom_pos_(2));
       tf::Point pt_map = transform_odom2map * pt_odom;
       odom_pos_= Eigen::Vector3d(pt_map.x(), pt_map.y(), pt_map.z());
-                                 
+                                
       // 速度变换（线速度需要旋转到 map 坐标系）
       tf::Vector3 vel_odom(odom_vel_(0), odom_vel_(1), odom_vel_(2));
       tf::Vector3 vel_map = transform_odom2map.getBasis() * vel_odom;  // 只旋转，不平移
@@ -293,6 +297,7 @@ namespace ego_planner
       std::cerr << e.what() << '\n';
       return;
     }
+    
   }
 
   void EGOReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call)

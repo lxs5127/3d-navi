@@ -102,39 +102,40 @@ double LimitSpeed(const double vel_input,const double upper,const double lower)
 
 void odometryCallback(const nav_msgs::OdometryConstPtr &msg,tf::TransformListener* tf_listener_ptr)
 {
+    try
+    {
+      // 则当前odom_pos_为base与map的关系
+      tf::StampedTransform transform_odom2map;
+      transform_odom2map.setIdentity();//将变换矩阵初始化为单位阵
 
-  try
-  {
-    // 则当前odom_pos_为base与map的关系
-    tf::StampedTransform transform_odom2map;
-    tf_listener_ptr->lookupTransform("map", msg->header.frame_id,
-                                ros::Time(0), transform_odom2map);
-    // 位置变换    
-    tf::Point pt_odom(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
-    tf::Point pt_map = transform_odom2map * pt_odom;
+      //将当前位姿从odom坐标系转换到map坐标，如果存在tf变换关系的话
+      if (tf_listener_ptr->waitForTransform("map", msg->header.frame_id, ros::Time(0), ros::Duration(3.0)));
+      tf_listener_ptr->lookupTransform("map", msg->header.frame_id,
+                                  ros::Time(0), transform_odom2map);
+      // 位置变换    
+      tf::Point pt_odom(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
+      tf::Point pt_map = transform_odom2map * pt_odom;
 
-    odom2map_Pose.position.x = pt_map.x();
-    odom2map_Pose.position.y = pt_map.y();
-    odom2map_Pose.position.z = pt_map.z();
-
-                                
-    // 速度变换（线速度需要旋转到 map 坐标系）
-    tf::Quaternion q_odom(msg->pose.pose.orientation.x,
-                    msg->pose.pose.orientation.y,
-                    msg->pose.pose.orientation.z,
-                    msg->pose.pose.orientation.w);
-    tf::Quaternion q_map = transform_odom2map.getRotation() * q_odom;
-    odom2map_Pose.orientation.x = q_map.x();
-    odom2map_Pose.orientation.y = q_map.y();
-    odom2map_Pose.orientation.z = q_map.z();
-    odom2map_Pose.orientation.w = q_map.w();
-
-  }
-  catch(const std::exception& e)
-  {
-    std::cerr << e.what() << '\n';
-    return;
+      odom2map_Pose.position.x = pt_map.x();
+      odom2map_Pose.position.y = pt_map.y();
+      odom2map_Pose.position.z = pt_map.z();                 
+      // 速度变换（线速度需要旋转到 map 坐标系）
+      tf::Quaternion q_odom(msg->pose.pose.orientation.x,
+                      msg->pose.pose.orientation.y,
+                      msg->pose.pose.orientation.z,
+                      msg->pose.pose.orientation.w);
+      tf::Quaternion q_map = transform_odom2map.getRotation() * q_odom;
+      odom2map_Pose.orientation.x = q_map.x();
+      odom2map_Pose.orientation.y = q_map.y();
+      odom2map_Pose.orientation.z = q_map.z();
+      odom2map_Pose.orientation.w = q_map.w();
     }
+    catch(const std::exception& e)
+    {
+      std::cerr << e.what() << '\n';
+      return;
+    }
+
 }
 
 
