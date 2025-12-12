@@ -80,7 +80,7 @@
     <param name="grid_map/local_update_range_z"  value="5.5" /> 
     <param name="grid_map/obstacles_inflation"     value="0.1" /> 
     <param name="grid_map/local_map_margin" value="20"/>
-    <param name="grid_map/ground_height"        value="0.1"/>
+    <param name="grid_map/ground_height"        value="-1"/>
     <!-- camera parameter -->
     <param name="grid_map/cx" value="$(arg cx)"/>
     <param name="grid_map/cy" value="$(arg cy)"/>
@@ -122,9 +122,13 @@
     <param name="optimization/lambda_collision" value="0.1" type="double"/>
     <param name="optimization/lambda_feasibility" value="0.1" type="double"/>
     <param name="optimization/lambda_fitness" value="1" type="double"/>
-    <param name="optimization/dist0" value="0.1" type="double"/>
+    <param name="optimization/dist0" value="0.8" type="double"/>
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double"/>
     <param name="optimization/max_acc" value="$(arg max_acc)" type="double"/>
+    <!-- 新增参数，对z避障的惩罚权重 -->
+    <param name="optimization/lambda_z_penalty" value="1.5)" type="double"/>
+
+
 
     <param name="bspline/limit_vel" value="$(arg max_vel)" type="double"/>
     <param name="bspline/limit_acc" value="$(arg max_acc)" type="double"/>

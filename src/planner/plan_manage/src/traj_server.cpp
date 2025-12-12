@@ -154,8 +154,8 @@ std::pair<double, double> calculate_yaw(double t_cur)
   //当位置接近于目标，使用终点的偏航角
   yaw_diff=((end_pt_ - current_pos).norm()<min_close_distance? end_euler_(2):yaw_control_point) - yaw_robot;
 
-  cout<<"distance to goal:"<< (end_pt_ - current_pos).norm()<<endl;
-  cout<<"end_euler_(2)"<< end_euler_(2)*180/3.14 <<endl;
+  // cout<<"distance to goal:"<< (end_pt_ - current_pos).norm()<<endl;
+  // cout<<"end_euler_(2)"<< end_euler_(2)*180/3.14 <<endl;
   while (yaw_diff > PI)  yaw_diff -= 2 * PI;
   while (yaw_diff < -PI) yaw_diff += 2 * PI;
 
@@ -170,10 +170,10 @@ std::pair<double, double> calculate_yaw(double t_cur)
   yaw_rate = LimitSpeed(yaw_rate, 1.0, -1.0);//除以 时间差 得到 角速度
 
   //计算角速度速度
-  cout<<"angular PID veloctiy"<< "  " <<yaw_rate*180/3.14<<endl;
-  cout<<"angular diff"<< "  " <<yaw_diff*180/3.14<<endl;
-  cout<<"angular veloctiy"<< "  " <<yaw_diff*180/3.14/ (t_cur+1e-6)<<endl;
-  cout << "future_yaw  " << yaw_control_point*180/3.14 << " current_yaw " <<yaw_robot*180/3.14 << endl;
+  // cout<<"angular PID veloctiy"<< "  " <<yaw_rate*180/3.14<<endl;
+  // cout<<"angular diff"<< "  " <<yaw_diff*180/3.14<<endl;
+  // cout<<"angular veloctiy"<< "  " <<yaw_diff*180/3.14/ (t_cur+1e-6)<<endl;
+  // cout << "future_yaw  " << yaw_control_point*180/3.14 << " current_yaw " <<yaw_robot*180/3.14 << endl;
 
   return {yaw_diff,yaw_rate};// 角度差值  角速度
 }
@@ -189,9 +189,7 @@ void waypointCallback(const nav_msgs::PathConstPtr &msg)
     msg->poses.back().pose.orientation.y,  // 虚部 y
     msg->poses.back().pose.orientation.z   // 虚部 z
   );
-  cout << "end_euler_ " << msg->poses.back().pose.orientation << endl;
   end_euler_ =end_qtn_.matrix().eulerAngles(0,1,2);
-  cout << "end_euler_ " << end_euler_ .transpose()<< endl;
 }
 
 
@@ -204,7 +202,7 @@ void cmdCallback(const ros::TimerEvent &e)
 
   ros::Time time_now = ros::Time::now();
   double t_cur = (time_now - start_time_).toSec();
-  cout<<"t_cur: "<<t_cur<<endl;
+  // cout<<"t_cur: "<<t_cur<<endl;
   //向前预测时间段
   Eigen::Vector3d pos(Eigen::Vector3d::Zero()), vel(Eigen::Vector3d::Zero()), acc(Eigen::Vector3d::Zero());
   std::pair<double, double> yaw_yawdot(0, 0);
@@ -261,7 +259,7 @@ void cmdCallback(const ros::TimerEvent &e)
   velWorld.angular.y = 0;
   velWorld.angular.z = yaw_yawdot.second;
 
-  if (abs(velWorld.angular.z)<0.785)
+  if (abs(velWorld.angular.z)<4*0.785/3)
   {
     /* code */
     velWorld.linear.x = vel(0);
@@ -305,10 +303,10 @@ void cmdCallback(const ros::TimerEvent &e)
   robotVelocity_BASE_frame.angular.y = 0;
   robotVelocity_BASE_frame.angular.z = baseAngularVelBodyCur[2];
 
-  cout << "current_pos: " << odom2map_Pose.position.x<<"   "<<odom2map_Pose.position.y <<endl;
-  cout << "future_pos: " << control_point_state.pose.pose.position.x<<"   "<<control_point_state.pose.pose.position.y <<endl;
-  cout << "velocity: " << robotVelocity_BASE_frame.linear.x << "  " << robotVelocity_BASE_frame.angular.y <<endl;
-  cout << "yaw_velocity: " << robotVelocity_BASE_frame.angular.z<<endl;
+  // cout << "current_pos: " << odom2map_Pose.position.x<<"   "<<odom2map_Pose.position.y <<endl;
+  // cout << "future_pos: " << control_point_state.pose.pose.position.x<<"   "<<control_point_state.pose.pose.position.y <<endl;
+  // cout << "velocity: " << robotVelocity_BASE_frame.linear.x << "  " << robotVelocity_BASE_frame.angular.y <<endl;
+  // cout << "yaw_velocity: " << robotVelocity_BASE_frame.angular.z<<endl;
 
   pos_vel_pub.publish(robotVelocity_BASE_frame);
 

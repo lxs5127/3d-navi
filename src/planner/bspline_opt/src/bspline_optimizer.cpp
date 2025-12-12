@@ -11,6 +11,8 @@ namespace ego_planner
     nh.param("optimization/lambda_collision", lambda2_, -1.0);
     nh.param("optimization/lambda_feasibility", lambda3_, -1.0);
     nh.param("optimization/lambda_fitness", lambda4_, -1.0);
+    nh.param("optimization/lambda_z_penalty", Z_COST_PENALTY, 1.5);
+
 
     nh.param("optimization/dist0", dist0_, -1.0);
     nh.param("optimization/max_vel", max_vel_, -1.0);
@@ -36,31 +38,35 @@ namespace ego_planner
    * But I will merge then someday.*/
   std::vector<std::vector<Eigen::Vector3d>> BsplineOptimizer::initControlPoints(Eigen::MatrixXd &init_points, bool flag_first_init /*= true*/)
   {
-
     if (flag_first_init)
     {
       cps_.clearance = dist0_;
       cps_.resize(init_points.cols());
       cps_.points = init_points;
     }
-
     /*** Segment the initial trajectory according to obstacles ***/
     constexpr int ENOUGH_INTERVAL = 2;
     double step_size = grid_map_->getResolution() / ((init_points.col(0) - init_points.rightCols(1)).norm() / (init_points.cols() - 1)) / 2;
     int in_id, out_id;
-    vector<std::pair<int, int>> segment_ids;
+    vector<std::pair<int, int>> segment_ids;// 存储碰撞段的<进入障碍物索引, 离开障碍物索引>
     int same_occ_state_times = ENOUGH_INTERVAL + 1;
     bool occ, last_occ = false;
     bool flag_got_start = false, flag_got_end = false, flag_got_end_maybe = false;
-    int i_end = (int)init_points.cols() - order_ - ((int)init_points.cols() - 2 * order_) / 3; // only check closed 2/3 points.
-    for (int i = order_; i <= i_end; ++i)
+    // ========== 关键修改：仅检查后3/5控制点 ==========
+    int N = init_points.cols();  // 总控制点数量
+    int i_start = order_ + 3 * (N - 2 * order_) / 4;  // 后3/4的起始位置
+    int i_end = N - order_;  // 后1/3的结束位置（避免越界）
+    // 确保起始位置合法（至少大于order_，小于i_end）
+    i_start = std::max(i_start, order_);
+    i_end = std::min(i_end, N - order_);
+    
+    for (int i = order_; i <= i_end; ++i)// order_：B样条阶数（如3阶），跳过前order_个控制点
     {
+      // 遍历轨迹点i-1到i的连线（以step_size插值，精细检测是否穿障）
       for (double a = 1.0; a >= 0.0; a -= step_size)
       {
         occ = grid_map_->getInflateOccupancy(a * init_points.col(i - 1) + (1 - a) * init_points.col(i));
-        // cout << setprecision(5);
-        // cout << (a * init_points.col(i-1) + (1-a) * init_points.col(i)).transpose() << " occ1=" << occ << endl;
-
+        
         if (occ && !last_occ)
         {
           if (same_occ_state_times > ENOUGH_INTERVAL || i == order_)
@@ -347,13 +353,16 @@ namespace ego_planner
     double demarcation = cps_.clearance;
     double a = 3 * demarcation, b = -3 * pow(demarcation, 2), c = pow(demarcation, 3);
 
+
+    // ========== 新增参数：强化XY优先级，压制Z方向 ==========
+    const double XY_GRADIENT_WEIGHT = 1.0; // XY方向梯度权重（加倍强化）
+    
     force_stop_type_ = DONT_STOP;
     if (iter_num > 3 && smoothness_cost / (cps_.size - 2 * order_) < 0.1) // 0.1 is an experimental value that indicates the trajectory is smooth enough.
     {
       check_collision_and_rebound();
     }
-
-    /*** calculate distance cost and gradient ***/
+     /*** calculate distance cost and gradient ***/
     for (auto i = order_; i < end_idx; ++i)
     {
       for (size_t j = 0; j < cps_.direction[i].size(); ++j)
@@ -362,19 +371,35 @@ namespace ego_planner
         double dist_err = cps_.clearance - dist;
         Eigen::Vector3d dist_grad = cps_.direction[i][j];
 
-        if (dist_err < 0)
+        // ========== 关键修改1：拆分XY/Z梯度，禁用Z方向 ==========
+        Eigen::Vector3d dist_grad_xy = dist_grad;
+        dist_grad_xy(2) = 0;  // 强制Z方向梯度为0，仅保留XY分量
+        if (dist_grad_xy.norm() > 1e-6) {
+          dist_grad_xy.normalize(); // 重新归一化XY梯度，保证方向一致
+        }
+
+        // ========== 关键修改2：区分XY/Z的距离误差，惩罚Z方向 ==========
+        double dist_err_final = dist_err;
+        // 若避障方向以Z为主（Z分量占比>0.5），则超高倍惩罚
+        if (abs(dist_grad(2)) > 0.5) {
+          dist_err_final *= Z_COST_PENALTY;
+        }
+
+        if (dist_err_final < 0)
         {
           /* do nothing */
         }
-        else if (dist_err < demarcation)
+        else if (dist_err_final < demarcation)
         {
-          cost += pow(dist_err, 3);
-          gradient.col(i) += -3.0 * dist_err * dist_err * dist_grad;
+          cost += pow(dist_err_final, 3);
+          // ========== 关键修改3：仅用XY梯度，强化权重 ==========
+          gradient.col(i) += -3.0 * dist_err_final * dist_err_final * dist_grad_xy * XY_GRADIENT_WEIGHT;
         }
         else
         {
-          cost += a * dist_err * dist_err + b * dist_err + c;
-          gradient.col(i) += -(2.0 * a * dist_err + b) * dist_grad;
+          cost += a * dist_err_final * dist_err_final + b * dist_err_final + c;
+          // ========== 关键修改3：仅用XY梯度，强化权重 ==========
+          gradient.col(i) += -(2.0 * a * dist_err_final + b) * dist_grad_xy * XY_GRADIENT_WEIGHT;
         }
       }
     }

@@ -194,7 +194,6 @@ namespace ego_planner
         }
         t -= ts;
 
-
         double poly_time = (local_data_.position_traj_.evaluateDeBoorT(t) - local_target_pt).norm() / pp_.max_vel_ * 2;
         if (poly_time > ts)
         {
@@ -275,6 +274,8 @@ namespace ego_planner
 
     static int vis_id = 0;
 
+    cout<<"a_star_pathes nums: "<<a_star_pathes.size()<<endl;
+  
     visualization_->displayInitPathList(point_set, 0.2, 0);
     visualization_->displayAStarList(a_star_pathes, vis_id);
 
@@ -283,7 +284,6 @@ namespace ego_planner
     /*** STEP 2: OPTIMIZE ***/
     // bool flag_step_1_success=true;
     bool flag_step_1_success = bspline_optimizer_rebound_->BsplineOptimizeTrajRebound(ctrl_pts, ts);
-    cout << "first_optimize_step_success=" << flag_step_1_success << endl;
     if (!flag_step_1_success)
     {
       // visualization_->displayOptimalList( ctrl_pts, vis_id );
@@ -291,7 +291,6 @@ namespace ego_planner
       return false;
     }
     visualization_->displayOptimalList( ctrl_pts, vis_id );
-
     //计算优化时间
     t_opt = ros::Time::now() - t_start;
     t_start = ros::Time::now();
@@ -318,6 +317,9 @@ namespace ego_planner
       continous_failures_count_++;
       return false;
     }
+
+    cout << "first_optimize_step_success=" << flag_step_1_success << endl;
+
 
     t_refine = ros::Time::now() - t_start;
 
@@ -349,7 +351,6 @@ namespace ego_planner
   {
     // generate global reference trajectory
     cout<<"start_pos"<<start_pos.transpose()<<endl;
-
 
     vector<Eigen::Vector3d> points;
     points.push_back(start_pos);

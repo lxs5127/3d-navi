@@ -46,7 +46,7 @@
     <!-- 1: use 2D Nav Goal to select goal  -->
     <!-- 2: use global waypoints below  -->
     <!-- 3: use move_base path waypoints below  -->
-    <arg name="flight_type" value="3" />
+    <arg name="flight_type" value="1" />
     
     <!-- global waypoints -->
     <!-- It generates a piecewise min-snap traj passing all waypoints -->

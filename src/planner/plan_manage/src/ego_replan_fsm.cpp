@@ -138,7 +138,7 @@ namespace ego_planner
     double min_dist = 0.8;  // 下采样：每隔 0.8m 保留一个点（避免点太密）
     Eigen::Vector3d last_wp;
     //添加最后终点
-    end_pt_ << msg->poses.back().pose.position.x, msg->poses.back().pose.position.y, msg->poses.back().pose.position.y;
+    end_pt_ << msg->poses.back().pose.position.x, msg->poses.back().pose.position.y, msg->poses.back().pose.position.z;
     bool first = true;
 
     for (const auto& pose_stamped : msg->poses)

@@ -114,6 +114,8 @@ namespace ego_planner
     double lambda3_;               // feasibility weight
     double lambda4_;               // curve fitting
 
+    double Z_COST_PENALTY;
+
     int a;
     //
     double dist0_;             // safe distance
