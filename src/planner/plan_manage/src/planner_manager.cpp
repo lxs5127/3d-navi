@@ -219,6 +219,8 @@ namespace ego_planner
 
         double sample_length = 0;
         double cps_dist = pp_.ctrl_pt_dist * 1.5; // cps_dist will be divided by 1.5 in the next
+        const int max_iterations = 50;  // 添加最大迭代次数限制
+        int iteration_count = 0;
         size_t id = 0;
         do
         {
@@ -243,6 +245,11 @@ namespace ego_planner
               id++;
           }
           point_set.push_back(local_target_pt);
+          iteration_count++;
+          if (iteration_count>max_iterations){
+            ROS_ERROR("Planning failure should never have happened");
+            return false;
+          }
         } while (point_set.size() < 7); // If the start point is very close to end point, this will help
 
         start_end_derivatives.push_back(local_data_.velocity_traj_.evaluateDeBoorT(t_cur));
@@ -256,7 +263,6 @@ namespace ego_planner
           flag_regenerate = true;
         }
       }
-      
     } while (flag_regenerate);
 
     //强制抬起point_set的z坐标

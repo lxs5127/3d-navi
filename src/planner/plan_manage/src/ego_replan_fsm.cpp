@@ -266,7 +266,7 @@ namespace ego_planner
   void EGOReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
   {
     // odom_topic
-    odom_pos_= Eigen::Vector3d(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
+    odom_pos_= Eigen::Vector3d(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);//将机器人通过高度设置为，其高度的80*
     odom_vel_=Eigen::Vector3d(msg->twist.twist.linear.x, msg->twist.twist.linear.y, 0);
     // odom_acc_ = estimateAcc( msg );
     have_odom_ = true;

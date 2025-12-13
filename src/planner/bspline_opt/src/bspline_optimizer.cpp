@@ -11,7 +11,7 @@ namespace ego_planner
     nh.param("optimization/lambda_collision", lambda2_, -1.0);
     nh.param("optimization/lambda_feasibility", lambda3_, -1.0);
     nh.param("optimization/lambda_fitness", lambda4_, -1.0);
-    nh.param("optimization/lambda_z_penalty", Z_COST_PENALTY, 1.5);
+    nh.param("optimization/lambda_z_penalty", Z_COST_PENALTY, 1.2);
 
 
     nh.param("optimization/dist0", dist0_, -1.0);
@@ -52,7 +52,7 @@ namespace ego_planner
     int same_occ_state_times = ENOUGH_INTERVAL + 1;
     bool occ, last_occ = false;
     bool flag_got_start = false, flag_got_end = false, flag_got_end_maybe = false;
-    // ========== 关键修改：仅检查后3/5控制点 ==========
+    // ========== 关键修改：仅检查后3/4控制点 ==========
     int N = init_points.cols();  // 总控制点数量
     int i_start = order_ + 3 * (N - 2 * order_) / 4;  // 后3/4的起始位置
     int i_end = N - order_;  // 后1/3的结束位置（避免越界）
@@ -60,7 +60,7 @@ namespace ego_planner
     i_start = std::max(i_start, order_);
     i_end = std::min(i_end, N - order_);
     
-    for (int i = order_; i <= i_end; ++i)// order_：B样条阶数（如3阶），跳过前order_个控制点
+    for (int i = i_start; i <= i_end; ++i)// order_：B样条阶数（如3阶），跳过前order_个控制点
     {
       // 遍历轨迹点i-1到i的连线（以step_size插值，精细检测是否穿障）
       for (double a = 1.0; a >= 0.0; a -= step_size)
@@ -69,7 +69,7 @@ namespace ego_planner
         
         if (occ && !last_occ)
         {
-          if (same_occ_state_times > ENOUGH_INTERVAL || i == order_)
+          if (same_occ_state_times > ENOUGH_INTERVAL || i == i_start)
           {
             in_id = i - 1;
             flag_got_start = true;
@@ -88,7 +88,7 @@ namespace ego_planner
           ++same_occ_state_times;
         }
 
-        if (flag_got_end_maybe && (same_occ_state_times > ENOUGH_INTERVAL || (i == (int)init_points.cols() - order_)))
+        if (flag_got_end_maybe && (same_occ_state_times > ENOUGH_INTERVAL || (i == (int)init_points.cols() - i_start)))
         {
           flag_got_end_maybe = false;
           flag_got_end = true;

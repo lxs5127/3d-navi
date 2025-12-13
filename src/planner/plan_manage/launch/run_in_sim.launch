@@ -17,7 +17,7 @@
     <arg name="odometry_topic" value="$(arg odom_topic)"/>
     <arg name="lidar_frame_id" value="map"/>
     <!-- <arg name="lidar_frame_id" value="camera_init"/> -->
-
+    <!-- Robot height -->
 
     <!-- camera pose: transform of camera frame in the world frame -->
     <!-- depth topic: depth image, 640x480 by default -->

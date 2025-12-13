@@ -53,6 +53,7 @@
     <param name="fsm/planning_horizon" value="$(arg planning_horizon)" type="double"/> <!--always set to 1.5 times grater than sensing horizen-->
     <param name="fsm/planning_horizen_time" value="2" type="double"/>
     <param name="fsm/emergency_time_" value="1.0" type="double"/>
+    
 
     <param name="fsm/waypoint_num" value="$(arg point_num)" type="int"/>
     <param name="fsm/waypoint0_x" value="$(arg point0_x)" type="double"/>
@@ -125,8 +126,8 @@
     <param name="optimization/dist0" value="0.8" type="double"/>
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double"/>
     <param name="optimization/max_acc" value="$(arg max_acc)" type="double"/>
-    <!-- 新增参数，对z避障的惩罚权重 -->
-    <param name="optimization/lambda_z_penalty" value="1.5)" type="double"/>
+    <!-- 新增参数，对z避障的惩罚权重 ,z_penalty小于1，则倾向垂直规划-->
+    <param name="optimization/lambda_z_penalty" value="1.5" type="double"/>
 
 
 
