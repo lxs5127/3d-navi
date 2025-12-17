@@ -127,7 +127,7 @@
     <param name="optimization/max_vel" value="$(arg max_vel)" type="double"/>
     <param name="optimization/max_acc" value="$(arg max_acc)" type="double"/>
     <!-- 新增参数，对z避障的惩罚权重 ,z_penalty小于1，则倾向垂直规划-->
-    <param name="optimization/lambda_z_penalty" value="1.5" type="double"/>
+    <param name="optimization/lambda_z_penalty" value="1.2" type="double"/>
 
 
 

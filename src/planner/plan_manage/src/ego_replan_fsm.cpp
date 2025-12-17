@@ -245,8 +245,11 @@ namespace ego_planner
       /*** FSM ***/
       if (exec_state_ == WAIT_TARGET)
         changeFSMExecState(GEN_NEW_TRAJ, "TRIG");
-      else if (exec_state_ == EXEC_TRAJ)
+      else if (exec_state_ == EXEC_TRAJ){
+
         changeFSMExecState(REPLAN_TRAJ, "TRIG");
+      }
+              
 
       // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
   
@@ -399,7 +402,7 @@ namespace ego_planner
 
     case REPLAN_TRAJ:
     {
-        cout << "!!!REPLAN_TRAJ" <<endl;
+      cout << "!!!REPLAN_TRAJ" <<endl;
       if (planFromCurrentTraj())
       {
         // planFromCurrentTraj()
@@ -431,15 +434,14 @@ namespace ego_planner
       else
       {
         cout << "### change state to REPLAN_TRAJ in '!!!EXEC_TRAJ'" << endl;
+
         changeFSMExecState(REPLAN_TRAJ, "FSM");
       }
       break;
     }
 
-
     case EMERGENCY_STOP:
     {
-
       if (flag_escape_emergency_) // Avoiding repeated calls
       {
         callEmergencyStop(odom_pos_);
@@ -543,12 +545,9 @@ namespace ego_planner
         planner_manager_->reboundReplan(start_pt_, start_vel_, start_acc_, local_target_pt_, local_target_vel_, (have_new_target_ || flag_use_poly_init), flag_randomPolyTraj);
     have_new_target_ = false; //FIXME
 
-
     if (plan_success)
     {
-
       auto info = &planner_manager_->local_data_;
-
       /* publish traj */
       ego_planner::Bspline bspline;
       bspline.order = 3;
@@ -556,8 +555,8 @@ namespace ego_planner
       bspline.traj_id = info->traj_id_;
 
       Eigen::MatrixXd pos_pts = info->position_traj_.getControlPoint();//get_control_points();会向前得到t_cur时间段的轨迹
-
       bspline.pos_pts.reserve(pos_pts.cols());
+      
       for (int i = 0; i < pos_pts.cols(); ++i)
       {
         geometry_msgs::Point pt;
@@ -575,9 +574,14 @@ namespace ego_planner
       }
 
       bspline_pub_.publish(bspline);
-
       // visualization_->displayOptimalList(info->position_traj_.get_control_points(), 0);
+    }else//如果规划失败马上停下，并开始
+    {
+      /* code */
+      changeFSMExecState(EMERGENCY_STOP, "FSM");
+      flag_escape_emergency_ = true;
     }
+    
 
     return plan_success;
   }

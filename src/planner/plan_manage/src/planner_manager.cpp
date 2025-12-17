@@ -52,7 +52,6 @@ namespace ego_planner
     if ((start_pt - local_target_pt).norm() < 0.2)
     {
       cout << "Close to goal" << endl;
-      continous_failures_count_++;
       return false;
     }
 
@@ -219,7 +218,7 @@ namespace ego_planner
 
         double sample_length = 0;
         double cps_dist = pp_.ctrl_pt_dist * 1.5; // cps_dist will be divided by 1.5 in the next
-        const int max_iterations = 50;  // 添加最大迭代次数限制
+        const int max_iterations = 200;  // 添加最大迭代次数限制
         int iteration_count = 0;
         size_t id = 0;
         do
@@ -247,7 +246,7 @@ namespace ego_planner
           point_set.push_back(local_target_pt);
           iteration_count++;
           if (iteration_count>max_iterations){
-            ROS_ERROR("Planning failure should never have happened");
+            ROS_ERROR("max_iterations failure should never have happened");
             return false;
           }
         } while (point_set.size() < 7); // If the start point is very close to end point, this will help
@@ -266,9 +265,7 @@ namespace ego_planner
     } while (flag_regenerate);
 
     //强制抬起point_set的z坐标
-
     Eigen::MatrixXd ctrl_pts;
-    
     UniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, ctrl_pts);
     
     //计算astar路径
@@ -279,6 +276,7 @@ namespace ego_planner
     t_init = ros::Time::now() - t_start;
 
     static int vis_id = 0;
+    static int Rebound_success_flag = 0 ;
 
     cout<<"a_star_pathes nums: "<<a_star_pathes.size()<<endl;
   
@@ -293,9 +291,11 @@ namespace ego_planner
     if (!flag_step_1_success)
     {
       // visualization_->displayOptimalList( ctrl_pts, vis_id );
-      continous_failures_count_++;
+      Rebound_success_flag++;
+      ROS_ERROR("Planning failure have happened %d times", Rebound_success_flag);
       return false;
     }
+    
     visualization_->displayOptimalList( ctrl_pts, vis_id );
     //计算优化时间
     t_opt = ros::Time::now() - t_start;

@@ -353,7 +353,6 @@ namespace ego_planner
     double demarcation = cps_.clearance;
     double a = 3 * demarcation, b = -3 * pow(demarcation, 2), c = pow(demarcation, 3);
 
-
     // ========== 新增参数：强化XY优先级，压制Z方向 ==========
     const double XY_GRADIENT_WEIGHT = 1.0; // XY方向梯度权重（加倍强化）
     
@@ -382,7 +381,7 @@ namespace ego_planner
         double dist_err_final = dist_err;
         // 若避障方向以Z为主（Z分量占比>0.5），则超高倍惩罚
         if (abs(dist_grad(2)) > 0.5) {
-          dist_err_final *= Z_COST_PENALTY;
+          dist_err_final *= Z_COST_PENALTY+1e-6;
         }
 
         if (dist_err_final < 0)
@@ -938,20 +937,20 @@ namespace ego_planner
           result == lbfgs::LBFGS_ALREADY_MINIMIZED ||
           result == lbfgs::LBFGS_STOP)
       {
-        //ROS_WARN("Solver error in planning!, return = %s", lbfgs::lbfgs_strerror(result));
+        // ROS_WARN("Solver error in planning!, return = %s", lbfgs::lbfgs_strerror(result));
         flag_force_return = false;
 
         UniformBspline traj = UniformBspline(cps_.points, 3, bspline_interval_);
         double tm, tmp;
         traj.getTimeSpan(tm, tmp);
         double t_step = (tmp - tm) / ((traj.evaluateDeBoorT(tmp) - traj.evaluateDeBoorT(tm)).norm() / grid_map_->getResolution());
-        for (double t = tm; t < tmp * 2 / 3; t += t_step) // Only check the closest 2/3 partition of the whole trajectory.
+        
+        for (double t = tm; t < tmp * 1 / 4; t += t_step) // Only check the closest 3/4 partition of the whole trajectory.
         {
-          flag_occ = grid_map_->getInflateOccupancy(traj.evaluateDeBoorT(t));
+          flag_occ = grid_map_->getInflateOccupancy(traj.evaluateDeBoorT(t));//
           if (flag_occ)
           {
             //cout << "hit_obs, t=" << t << " P=" << traj.evaluateDeBoorT(t).transpose() << endl;
-
             if (t <= bspline_interval_) // First 3 control points in obstacles!
             {
               cout << cps_.points.col(1).transpose() << "\n"
@@ -961,7 +960,6 @@ namespace ego_planner
               ROS_WARN("First 3 control points in obstacles! return false, t=%f", t);
               return false;
             }
-
             break;
           }
         }
@@ -997,6 +995,7 @@ namespace ego_planner
 
     return success;
   }
+
 
   bool BsplineOptimizer::refine_optimize()
   {
