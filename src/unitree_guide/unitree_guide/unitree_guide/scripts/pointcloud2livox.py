@@ -19,7 +19,7 @@ import sensor_msgs.point_cloud2 as pc2
 from nav_msgs.msg import Odometry
 
 
-SENSOR_FRAME = "map"    
+SENSOR_FRAME = "odom"    
 ODOM_TOPIC = "/Odometry_gazebo"           
 m_buf = Lock()
 latest_odom = None
@@ -223,7 +223,7 @@ def main():
 
     tf_listener = tf.TransformListener()
 
-    laser_blind = rospy.get_param('~laser_blind', 0.15)  # 盲区半径
+    laser_blind = rospy.get_param('~laser_blind', 0.2)  # 盲区半径
     rospy.loginfo(f"Blind range : {laser_blind} m")
 
 
@@ -235,7 +235,7 @@ def main():
     rospy.Subscriber('/scan', PointCloud, mmw_handler, queue_size=10)
     rospy.Subscriber(ODOM_TOPIC, Odometry, odom_callback, queue_size=10)
 
-    pub_laser_livox = rospy.Publisher('/livox/lidar', CustomMsg, queue_size=10)
+    pub_laser_livox = rospy.Publisher('/livox/lidar2', CustomMsg, queue_size=10)
 
     pub_laser_cloud = rospy.Publisher("/livox/Pointcloud2", PointCloud2, queue_size=10)
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(unitree_guide)
-#torch
+#添加torch依赖
 find_package(Torch REQUIRED PATHS "/home/cjh/third_party_libs/libtorch")
 
 set(ROBOT_TYPE A1)         # The type of robot, support Go1 and A1 currently

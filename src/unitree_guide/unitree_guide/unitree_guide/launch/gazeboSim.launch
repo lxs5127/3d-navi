@@ -78,7 +78,7 @@
     <!-- launch 文件 -->
     <!-- 如果是仿真环境，启动mid360的点云扫描转化enable_pointcloud2livox -->
     <node pkg="unitree_guide" type="pointcloud2livox.py" name="pointcloud2livox" output="screen">
-        <param name="laser_blind" value="0.2" />
+        <param name="laser_blind" value="0.5" />
         <param name="min_angle" value="-7"/>
         <param name="max_angle" value="55"/>
     </node>
