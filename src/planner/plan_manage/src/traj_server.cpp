@@ -232,9 +232,11 @@ void cmdCallback(const ros::TimerEvent &e)
 
   // ------------ estimation q from traj ------------- // 
   control_point_state.header.frame_id = "map";
-  double yaw_estimate_from_traj = 0;
+  static double yaw_estimate_from_traj = 0;
   // vy/vx 得到预测偏航角
+  if(vel.norm()>0.1)//设置一个关于矢量速度的低通滤波，在突然暂停的情况下保持yaw的旋转角
   yaw_estimate_from_traj=std::atan2(vel(1),vel(0)+1e-6);
+  
   //构建一个欧拉角的（3，1）变量
   Eigen::Vector3d eulerAngle(yaw_estimate_from_traj,0,0);
   //利用tf的四元数类，转欧拉角为四元数

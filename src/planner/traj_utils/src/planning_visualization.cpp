@@ -205,7 +205,7 @@ namespace ego_planner
     vector<Eigen::Vector3d> list;
 
     Eigen::Vector4d color = Eigen::Vector4d(0.5 + ((double)rand() / RAND_MAX / 2), 0.5 + ((double)rand() / RAND_MAX / 2), 0, 1); // make the A star pathes different every time.
-    double scale = 0.05 + (double)rand() / RAND_MAX / 10;
+    double scale = 0.15 + (double)rand() / RAND_MAX / 10;
 
     // for ( int i=0; i<10; i++ )
     // {

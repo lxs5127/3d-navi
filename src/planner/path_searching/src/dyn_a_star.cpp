@@ -157,7 +157,7 @@ bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_
     endPtr->index = end_idx;
 
     // ========== 核心修改1：扩大XY搜索范围，固定Z范围 ==========
-    const int XY_EXTEND = 10;  // XY方向搜索范围从±1扩展到±2（栅格数）
+    const int XY_EXTEND = 5;  // XY方向搜索范围从±1扩展到±2（栅格数）
     const int Z_EXTEND = 1;   // Z方向保持±1（不扩展，弱化Z方向搜索）
 
     double tentative_gScore;
@@ -217,14 +217,14 @@ bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_
 
                     neighborPtr->rounds = rounds_;
 
-                    if (checkOccupancy(Index2Coord(neighborPtr->index)))
+                    if (checkOccupancy(Index2Coord(neighborPtr->index)))//如果在障碍物中则跳过该点
                     {
                         continue;
                     }
 
                     // ========== 核心修改4：调整移动成本，优先XY方向 ==========
                     // 拆分XY/Z成本：Z方向成本加倍，XY方向成本折扣
-                    double xy_cost = sqrt(dx*dx + dy*dy)*0.8;  // XY方向移动距离
+                    double xy_cost = sqrt(dx*dx + dy*dy);  // XY方向移动距离
                     double z_cost = abs(dz) * 5.0+2;        // Z方向成本×5（惩罚Z移动）+2，在任何情况下都使得z的代价增大，避免向上下规划
                     double static_cost = sqrt(xy_cost*xy_cost + z_cost*z_cost);  // 总移动成本
 
@@ -260,7 +260,7 @@ bool AStar::AstarSearch(const double step_size, Vector3d start_pt, Vector3d end_
                         neighborPtr->fScore = tentative_gScore + heu + z_heu;                    }
                 }
         ros::Time time_2 = ros::Time::now();
-        if ((time_2 - time_1).toSec() > 0.2)
+        if ((time_2 - time_1).toSec() > 0.5)
         {
             ROS_WARN("Failed in A star path searching !!! 0.2 seconds time limit exceeded.");
             return false;

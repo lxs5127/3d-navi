@@ -45,9 +45,9 @@ namespace ego_planner
     static int count = 0;
     std::cout << endl
               << "[rebo replan]: -------------------------------------" << count++ << std::endl;
-    cout.precision(3);
-    cout << "start: " << start_pt.transpose() << ", " << start_vel.transpose() << "\ngoal:" << local_target_pt.transpose() << ", " << local_target_vel.transpose()
-         << endl;
+    // cout.precision(3);
+    // cout << "start: " << start_pt.transpose() << ", " << start_vel.transpose() << "\ngoal:" << local_target_pt.transpose() << ", " << local_target_vel.transpose()
+    //      << endl;
 
     if ((start_pt - local_target_pt).norm() < 0.2)
     {
@@ -127,52 +127,7 @@ namespace ego_planner
         start_end_derivatives.push_back(gl_traj.evaluateAcc(0));
         start_end_derivatives.push_back(gl_traj.evaluateAcc(t));
       }
-
       //重复inital
-      else if(0) {
-        /*** STEP 1-2: SAMPLE THE REMAINING OLD TRAJ & GENERATE A CONNECTING POLYNOMIAL TRAJ ***/
-          double dist = (start_pt - local_target_pt).norm();
-          //计算梯形加减速所需的时间
-          double time = pow(pp_.max_vel_, 2) / pp_.max_acc_ > dist ? sqrt(dist / pp_.max_acc_) : (dist - pow(pp_.max_vel_, 2) / pp_.max_acc_) / pp_.max_vel_ + 2 * pp_.max_vel_ / pp_.max_acc_;
-          //t_cur是动态间隔时间
-          double t_cur = (ros::Time::now() - local_data_.start_time_).toSec();
-          //gl_traj是從當前位置到目標位置的最小時間的連續多段多項式轨迹
-          PolynomialTraj gl_traj = PolynomialTraj::one_segment_traj_gen(start_pt, start_vel, start_acc, local_target_pt, local_target_vel, Eigen::Vector3d::Zero(), time);
-          double t;
-          bool flag_too_far;
-          ts *= 1.5; // ts will be divided by 1.5 in the next
-          do
-          {
-            ts /= 1.5;
-            point_set.clear();
-            flag_too_far = false;
-            Eigen::Vector3d last_pt = gl_traj.evaluate(0);
-            for (t = 0; t < time; t += ts)
-            {
-              Eigen::Vector3d pt = gl_traj.evaluate(t);
-
-              if ((last_pt - pt).norm() > pp_.ctrl_pt_dist * 1.5)
-              {
-                flag_too_far = true;
-                break;
-              }
-              last_pt = pt;
-              point_set.push_back(pt);
-            }
-          } while (flag_too_far || point_set.size() < 7); // To make sure the initial path has enough points.
-          t -= ts;
-
-          start_end_derivatives.push_back(local_data_.velocity_traj_.evaluateDeBoorT(t_cur));
-          start_end_derivatives.push_back(local_target_vel);
-          start_end_derivatives.push_back(local_data_.acceleration_traj_.evaluateDeBoorT(t_cur));
-          start_end_derivatives.push_back(Eigen::Vector3d::Zero());
-
-          if (point_set.size() > pp_.planning_horizen_ / pp_.ctrl_pt_dist * 3) // The initial path is unnormally too long!
-          {
-            flag_force_polynomial = true;
-            flag_regenerate = true;
-          }
-      }
       else{
         //不更新全部距離的軌跡，設定一個盲區距離，若當前點里機器狗太近則不更新軌跡
         double t;
@@ -264,7 +219,6 @@ namespace ego_planner
       }
     } while (flag_regenerate);
 
-    //强制抬起point_set的z坐标
     Eigen::MatrixXd ctrl_pts;
     UniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, ctrl_pts);
     
@@ -277,8 +231,6 @@ namespace ego_planner
 
     static int vis_id = 0;
     static int Rebound_success_flag = 0 ;
-
-    cout<<"a_star_pathes nums: "<<a_star_pathes.size()<<endl;
   
     visualization_->displayInitPathList(point_set, 0.2, 0);
     visualization_->displayAStarList(a_star_pathes, vis_id);
@@ -324,7 +276,7 @@ namespace ego_planner
       return false;
     }
 
-    cout << "first_optimize_step_success=" << flag_step_1_success << endl;
+    // cout << "first_optimize_step_success=" << flag_step_1_success << endl;
 
 
     t_refine = ros::Time::now() - t_start;

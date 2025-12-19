@@ -331,7 +331,10 @@ namespace ego_planner
 
   void EGOReplanFSM::execFSMCallback(const ros::TimerEvent &e)
   {
-// cout << "execFSMCallback" << endl;
+    /*定时器回调，定时查看当前的exec状态，以判断是否规划或是停止*/
+    // cout << "execFSMCallback" << endl;
+    MAX_EMERGENCY_STOP=5;
+    static int emergency_stop_times=0;
     static int fsm_num = 0;
     fsm_num++;
     if (fsm_num == 10)
@@ -445,14 +448,20 @@ namespace ego_planner
       if (flag_escape_emergency_) // Avoiding repeated calls
       {
         callEmergencyStop(odom_pos_);
+        emergency_stop_times++;//累积进入停止时间，直到强制停止次大于100次，则恢复
       }
       else
       {
         if (odom_vel_.norm() < 0.1)
           changeFSMExecState(GEN_NEW_TRAJ, "FSM");
       }
+      ROS_ERROR("emergency_stop_times :%d", emergency_stop_times);
 
-      flag_escape_emergency_ = false;
+      if (emergency_stop_times >MAX_EMERGENCY_STOP){
+        flag_escape_emergency_ = false;
+        emergency_stop_times=0;
+      }
+
       break;
     }
     }
@@ -512,10 +521,10 @@ namespace ego_planner
     /* ---------- check trajectory ---------- */
     constexpr double time_step = 0.01;
     double t_cur = (ros::Time::now() - info->start_time_).toSec();
-    double t_2_3 = info->duration_ * 2 / 3;
+    double t_total = info->duration_ ;
     for (double t = t_cur; t < info->duration_; t += time_step)
     {
-      if (t_cur < t_2_3 && t >= t_2_3) // If t_cur < t_2_3, only the first 2/3 partition of the trajectory is considered valid and will get checked.
+      if (t_cur < t_total && t >= t_total) 
         break;
 
       if (map->getInflateOccupancy(info->position_traj_.evaluateDeBoorT(t)))
@@ -544,6 +553,8 @@ namespace ego_planner
     bool plan_success =
         planner_manager_->reboundReplan(start_pt_, start_vel_, start_acc_, local_target_pt_, local_target_vel_, (have_new_target_ || flag_use_poly_init), flag_randomPolyTraj);
     have_new_target_ = false; //FIXME
+
+    cout<<"plan_success: "<<plan_success;
 
     if (plan_success)
     {
@@ -575,10 +586,12 @@ namespace ego_planner
 
       bspline_pub_.publish(bspline);
       // visualization_->displayOptimalList(info->position_traj_.get_control_points(), 0);
-    }else//如果规划失败马上停下，并开始
+    }
+    //Todo一个更合理的导航失败切换
+    else//如果规划失败马上停下，并开始
     {
       /* code */
-      changeFSMExecState(EMERGENCY_STOP, "FSM");
+      changeFSMExecState(EMERGENCY_STOP, "SAFETY");
       flag_escape_emergency_ = true;
     }
     

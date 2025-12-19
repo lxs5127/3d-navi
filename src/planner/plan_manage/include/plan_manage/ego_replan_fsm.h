@@ -30,6 +30,7 @@ namespace ego_planner
 
   private:
     /* ---------- flag ---------- */
+    int MAX_EMERGENCY_STOP;
     enum FSM_EXEC_STATE
     {
       INIT,
