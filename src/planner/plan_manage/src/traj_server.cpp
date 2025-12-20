@@ -261,7 +261,7 @@ void cmdCallback(const ros::TimerEvent &e)
   velWorld.angular.y = 0;
   velWorld.angular.z = yaw_yawdot.second;
 
-  if (abs(velWorld.angular.z)<0.785)
+  if (abs(yaw_yawdot.first)<0.785)
   {
     /* code */
     velWorld.linear.x = vel(0);
