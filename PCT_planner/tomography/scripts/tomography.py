@@ -36,6 +36,8 @@ class Tomography(object):
         self.process(points)
 
     def initROS(self):
+        # cfg.ros.map_frame='map'
+        # self.map_frame = cfg.ros.map_frame
         self.map_frame = cfg.ros.map_frame
 
         pointcloud_topic = cfg.ros.pointcloud_topic
@@ -209,6 +211,8 @@ if __name__ == '__main__':
     scene_cfg = getattr(__import__('config'), 'Scene' + args.scene)
 
     rospy.init_node('pointcloud_tomography', anonymous=True)
+
+    print(scene_cfg.pcd.file_name)
 
     mapping = Tomography(cfg, scene_cfg)
 

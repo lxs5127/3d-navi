@@ -18,4 +18,5 @@ class SceneTrav():
     cost_barrier = 50.0
 
     safe_margin = 0.4
+    safe_margin_gamma=1
     inflation = 0.2

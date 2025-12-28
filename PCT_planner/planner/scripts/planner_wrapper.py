@@ -77,7 +77,7 @@ class TomogramPlanner(object):
             max_heading_rate=self.max_heading_rate, use_quintic=self.use_quintic
         )
         self.planner.init_map(
-            20, 15, self.resolution, self.n_slice, 0.2,
+            20, 15, self.resolution, self.n_slice, 0.1,
             trav.reshape(-1, trav.shape[-1]).astype(np.double),
             elev_g.reshape(-1, elev_g.shape[-1]).astype(np.double),
             elev_c.reshape(-1, elev_c.shape[-1]).astype(np.double),
@@ -90,8 +90,9 @@ class TomogramPlanner(object):
         # TODO: calculate slice index. By default the start and end pos are all at slice 0
         self.start_idx[1:] = self.pos2idx(start_pos[:2])
         self.end_idx[1:] = self.pos2idx(end_pos[:2])
-        self.start_idx[0]=start_pos[-1]
-        self.end_idx[0]=end_pos[-1]
+        self.start_idx[0] = self.pos2slice(start_pos[-1])
+        self.end_idx[0] = self.pos2slice(end_pos[-1])
+
 
         self.planner.plan(self.start_idx, self.end_idx, True)
         path_finder: a_star.Astar = self.planner.get_path_finder()
@@ -110,7 +111,7 @@ class TomogramPlanner(object):
         traj_raw = optimizer.get_result_matrix()
         layers = optimizer.get_layers()
         heights = optimizer.get_heights()
-        print("heights origin:", heights)
+        # print("heights origin:", heights)
 
 
         opt_init = np.concatenate([opt_init.transpose(1, 0), init_layer.reshape(-1, 1)], axis=-1)
@@ -119,8 +120,21 @@ class TomogramPlanner(object):
         traj_3d = np.stack([traj[:, 0], traj[:, y_idx], heights / self.resolution], axis=1)
         traj_3d = transTrajGrid2Map(self.map_dim, self.center, self.resolution, traj_3d)
 
-        print(traj_3d,"traj_3d")
+        # print(traj_raw,"traj_raw")
         return traj_3d
+    
+    def pos2slice(self, z):
+        """将z坐标转换为切片索引"""
+        # 计算相对于起始高度的切片数
+        slice_offset = (z - self.slice_h0) / self.slice_dh
+        # 转换为整数索引并确保在有效范围内
+        slice_idx = int(np.round(slice_offset))
+        return np.clip(slice_idx, 0, self.n_slice - 1)
+
+    def get_slice_height(self, slice_idx):
+        """获取指定切片的实际高度"""
+        # slice_h0 为 ground_h+ground_dh
+        return self.slice_h0 + slice_idx * self.slice_dh
     
     def pos2idx(self, pos):
         print("pos origin:", pos)
