@@ -3,13 +3,16 @@
 ## 项目介绍
 本项目主要用于在 Gazebo 仿真环境中验证 [PCT-planner](https://github.com/byangw/PCT_planner.git) 和 [ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git) 两种路径规划算法。项目中使用了 Unitree A1 机器人模型以及强化学习控制器 [chy2948331536/unitree_guide](https://gitee.com/chy2948331536/unitree_guide)，其中控制器和 PCT-planner 需要 CUDA 支持。
 
+### 3D导航示例
 <div align="center">
   <img src="/src/image/878355907.gif" width="800"/>
 </div>
 
+### 3D规划示例
 <div align="center">
-  <img src="/src/image/123149131.gif" width="800"/>
+  <img src="/src/image/123141123.gif" width="800"/>
 </div>
+
 ---
 
 ## 下载与依赖
