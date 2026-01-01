@@ -94,6 +94,8 @@ class Astar {
 
   double GetNeighborAverageCost(const Node* node1);
 
+  bool IsValidNodeCoord(int layer, int y, int x) const;
+
   //后端路径重新优化，选取代价更低的路径
   bool RefinePathSerach();
 

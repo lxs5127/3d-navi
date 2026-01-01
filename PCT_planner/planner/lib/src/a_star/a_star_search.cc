@@ -81,6 +81,30 @@ int Astar::GetHash(const Eigen::Vector3i& idx) const {
   return idx[0] * 10000000 + idx[1] * max_x_ + idx[2];
 }
 
+
+
+// 判断坐标是否在地图合法边界内（图层、y轴、x轴）
+bool Astar::IsValidNodeCoord(int layer, int y, int x) const {
+    // 校验图层边界（0 <= layer < 最大图层数）
+    if (layer < 0 || layer >= max_layers_) {
+        std::cerr << "Error: 图层越界，合法范围[0, " << max_layers_ - 1 << "]，输入值：" << layer << std::endl;
+        return false;
+    }
+    // 校验y轴边界（对应grid_map_[layer][y][x]的第二个维度）
+    if (y < 0 || y >= max_y_) {
+        std::cerr << "Error: y轴坐标越界，合法范围[0, " << max_y_ - 1 << "]，输入值：" << y << std::endl;
+        return false;
+    }
+    // 校验x轴边界（对应grid_map_[layer][y][x]的第三个维度）
+    if (x < 0 || x >= max_x_) {
+        std::cerr << "Error: x轴坐标越界，合法范围[0, " << max_x_ - 1 << "]，输入值：" << x << std::endl;
+        return false;
+    }
+    // 所有坐标均合法
+    return true;
+}
+
+
 bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
   auto t0 = std::chrono::high_resolution_clock::now();
 
@@ -88,16 +112,24 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
     Reset();
     search_result_.clear();
   }
-
+  
+  //检测是否起始点和终点都符合要求
+  if (!IsValidNodeCoord(start[0],start[2],start[1]) || !IsValidNodeCoord(goal[0],goal[2],goal[1]))
+  {
+    return false;
+  }
+  
   auto start_node = &grid_map_[start[0]][start[2]][start[1]];
   auto goal_node = &grid_map_[goal[0]][goal[2]][goal[1]];
+
+  
+  
   start_node->g = 0.0;
 
   if (goal_node->cost > cost_threshold_) {
     printf("goal node is not reachable, cost: %f", goal_node->cost);
     return false;
   }
-
   // 优先队列（open_set）：按节点的f值（g+h）从小到大排序（通过NodeCompare实现）
   std::priority_queue<Node*, std::vector<Node*>, NodeCompare> open_set;
   // 哈希表（closed_set）：存储已处理的节点（避免重复访问）
@@ -128,13 +160,12 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
       printf("path found, time elapsed: %f ms\n",
              duration.count() / 1000.0);
       //触发后端优化
-      if (  this->RefinePathSerach())
+      if ( this->RefinePathSerach())
       {
        cout<<"refine success"<<endl;
       }
       return true;
     }
-
 
     // 步骤3：将当前节点加入封闭集（标记为已访问）
     closed_set[GetHash(current_node->idx)] = current_node;
@@ -198,7 +229,6 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
         open_set.push(neighbor_node);// 加入开放集等待探索
       }
     }  
- 
 
     if (open_set.empty())
     {
@@ -212,6 +242,7 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
       }
     }
   }
+
 // 若open_set为空仍未找到终点，说明无路径
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
       std::chrono::high_resolution_clock::now() - t0);
@@ -220,7 +251,7 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
   if (debug_) {
     ConvertClosedSetToMatrix(closed_set);// 调试模式下记录访问过的节点
   }
-  return true;
+  return false;
 }
 
 

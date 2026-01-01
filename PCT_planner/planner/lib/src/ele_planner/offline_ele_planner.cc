@@ -1,4 +1,5 @@
 #include "ele_planner/offline_ele_planner.h"
+#include <iostream>
 
 void OfflineElePlanner::InitMap(
     const double a_start_cost_threshold, const double safe_cost_margin,
@@ -18,21 +19,18 @@ void OfflineElePlanner::InitMap(
 
 bool OfflineElePlanner::Plan(const Eigen::Vector3i& start,
                              const Eigen::Vector3i& goal, const bool optimize) {
+
   if (!path_finder_.Search(start, goal)) {
     printf("A star Failed!\n");
     return false;
   }
 
   if (optimize) {
-    bool success = false;
     path_ = path_finder_.GetPathPoints();
-    
-    if (path_.empty())//判断为空则直接跳出
-    return success;
-
     path_.front().ref_v = 1;
     path_.back().ref_v = 1;
-    
+
+    bool success = false;
     if (use_quintic_) {
       success = trajectory_optimizer_wnoj_.GenerateTrajectory(path_, 200);
     } else {
