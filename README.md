@@ -89,9 +89,11 @@ roslaunch ego_planner ego_rviz.launch  # RVIZ 可视化
 ### 3. 启动 PCT-planner
 进入 `PCT-planner` 文件夹并运行以下命令：
 ```bash
+# 将分层地图可视化在RVIZ中
 cd tomography/scripts/ 
 python3 tomography.py --scene Building
 
+# 发布plan任务，启用interactive_marker_server
 cd planner/scripts/
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:home/YOUR-NAME/3d-navi/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
 python3 plan.py --scene Building
