@@ -15,6 +15,7 @@ Panels:
         - /TF1/Frames1
         - /Path1
         - /PointCloud22
+        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 1385
   - Class: rviz/Selection
@@ -35,7 +36,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: PointCloud2
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -271,52 +272,6 @@ Visualization Manager:
       Frame Timeout: 1
       Frames:
         All Enabled: false
-        FL_calf:
-          Value: false
-        FL_hip:
-          Value: false
-        FL_thigh:
-          Value: false
-        FL_thigh_shoulder:
-          Value: false
-        FR_calf:
-          Value: false
-        FR_hip:
-          Value: false
-        FR_thigh:
-          Value: false
-        FR_thigh_shoulder:
-          Value: false
-        RL_calf:
-          Value: false
-        RL_hip:
-          Value: false
-        RL_thigh:
-          Value: false
-        RL_thigh_shoulder:
-          Value: false
-        RR_calf:
-          Value: false
-        RR_hip:
-          Value: false
-        RR_thigh:
-          Value: false
-        RR_thigh_shoulder:
-          Value: false
-        base:
-          Value: true
-        imu_link:
-          Value: false
-        laser_livox:
-          Value: false
-        livox_imu_link:
-          Value: false
-        map:
-          Value: true
-        odom:
-          Value: true
-        trunk:
-          Value: false
       Marker Alpha: 1
       Marker Scale: 3
       Name: TF
@@ -324,39 +279,7 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          odom:
-            base:
-              laser_livox:
-                livox_imu_link:
-                  {}
-              trunk:
-                FL_hip:
-                  FL_thigh:
-                    FL_calf:
-                      {}
-                  FL_thigh_shoulder:
-                    {}
-                FR_hip:
-                  FR_thigh:
-                    FR_calf:
-                      {}
-                  FR_thigh_shoulder:
-                    {}
-                RL_hip:
-                  RL_thigh:
-                    RL_calf:
-                      {}
-                  RL_thigh_shoulder:
-                    {}
-                RR_hip:
-                  RR_thigh:
-                    RR_calf:
-                      {}
-                  RR_thigh_shoulder:
-                    {}
-                imu_link:
-                  {}
+        {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -463,6 +386,15 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: true
+    - Class: rviz/InteractiveMarkers
+      Enable Transparency: true
+      Enabled: true
+      Name: InteractiveMarkers
+      Show Axes: false
+      Show Descriptions: true
+      Show Visual Aids: false
+      Update Topic: /basic_controls/update
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 46; 52; 54
@@ -490,7 +422,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 19.897525787353516
+      Distance: 35.06623840332031
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -506,9 +438,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5647963285446167
+      Pitch: 1.209796667098999
       Target Frame: map
-      Yaw: 1.1824309825897217
+      Yaw: 1.3974307775497437
     Saved:
       - Class: rviz/ThirdPersonFollower
         Distance: 17.48538589477539
