@@ -269,7 +269,7 @@ namespace ego_planner
   void EGOReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
   {
     // odom_topic
-    odom_pos_= Eigen::Vector3d(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);//将机器人通过高度设置为，其高度的80*
+    odom_pos_= Eigen::Vector3d(msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z+0.1);//将机器人通过高度设置为，其高度的80*
     odom_vel_=Eigen::Vector3d(msg->twist.twist.linear.x, msg->twist.twist.linear.y, 0);
     // odom_acc_ = estimateAcc( msg );
     have_odom_ = true;
@@ -640,61 +640,90 @@ namespace ego_planner
  * @brief 获取局部目标点的函数
  * 该函数用于在全局路径上选择一个合适的局部目标点，用于局部路径规划
  */
-  void EGOReplanFSM::getLocalTarget()
+void EGOReplanFSM::getLocalTarget()
+{
+  // ========== 1. 初始化+安全校验 ==========
+  double max_vel = planner_manager_->pp_.max_vel_;
+  double max_acc = planner_manager_->pp_.max_acc_;
+  
+  // 时间步长（安全兜底，避免max_vel为0）
+  double t_step = (max_vel > 1e-6) ? (planning_horizen_ / 20 / max_vel) : 0.01;
+  t_step = std::max(t_step, 0.01); // 步长不小于10ms，保证精度
+
+  double total_dist = 0.0;        // 从start_pt_开始的累计轨迹路程
+  bool target_found = false;      // 是否找到满足条件的目标点
+  Eigen::Vector3d local_target = end_pt_; // 默认目标点为全局终点
+  double t_proj = 0.0;            // start_pt_在全局轨迹上的投影时间
+  double min_dist_to_start = 9999;// 用于找投影点的最小距离
+
+  // ========== 2. 第一步：找到start_pt_在全局轨迹上的投影点（核心） ==========
+  // 遍历全局轨迹，找到离start_pt_最近的点（投影点）
+  double t;
+  for (t = 0; t < planner_manager_->global_data_.global_duration_; t += t_step)
   {
-    double t;  // 时间变量，用于遍历全局路径
-
-    // 计算时间步长，基于规划范围、最大速度等因素
-    double t_step = planning_horizen_ / 20 / planner_manager_->pp_.max_vel_;
-    double dist_min = 9999, dist_min_t = 0.0;  // 初始化最小距离和对应时间
-    // 遍历全局路径，寻找合适的局部目标点
-    for (t = planner_manager_->global_data_.last_progress_time_; t < planner_manager_->global_data_.global_duration_; t += t_step)
+    Eigen::Vector3d pos_t = planner_manager_->global_data_.getPosition(t);
+    double dist_to_start = (pos_t - start_pt_).norm();
+    
+    // 更新投影点（最近点）
+    if (dist_to_start < min_dist_to_start)
     {
-        // 获取当前时间点的位置
-      Eigen::Vector3d pos_t = planner_manager_->global_data_.getPosition(t);
-        // 计算当前位置与起始点的距离
-      double dist = (pos_t - start_pt_).norm();
-
-        // 检查last_progress_time_是否有效
-      if (t < planner_manager_->global_data_.last_progress_time_ + 1e-5 && dist > planning_horizen_)
-      {
-        // todo: 处理last_progress_time_错误的情况
-        ROS_ERROR("last_progress_time_ ERROR !!!!!!!!!");
-        ROS_ERROR("last_progress_time_ ERROR !!!!!!!!!");
-        ROS_ERROR("last_progress_time_ ERROR !!!!!!!!!");
-        ROS_ERROR("last_progress_time_ ERROR !!!!!!!!!");
-        ROS_ERROR("last_progress_time_ ERROR !!!!!!!!!");
-        return;
-      }
-      if (dist < dist_min)
-      {
-        dist_min = dist;
-        dist_min_t = t;
-      }
-
-      if (dist >= planning_horizen_)
-      {
-        local_target_pt_ = pos_t;
-        planner_manager_->global_data_.last_progress_time_ = dist_min_t;
-        break;
-      }
-    }
-    if (t > planner_manager_->global_data_.global_duration_) // Last global point
-    {
-      local_target_pt_ = end_pt_;
-    }
-
-    if ((end_pt_ - local_target_pt_).norm() < (planner_manager_->pp_.max_vel_ * planner_manager_->pp_.max_vel_) / (2 * planner_manager_->pp_.max_acc_))
-    {
-      // local_target_vel_ = (end_pt_ - init_pt_).normalized() * planner_manager_->pp_.max_vel_ * (( end_pt_ - local_target_pt_ ).norm() / ((planner_manager_->pp_.max_vel_*planner_manager_->pp_.max_vel_)/(2*planner_manager_->pp_.max_acc_)));
-      // cout << "A" << endl;
-      local_target_vel_ = Eigen::Vector3d::Zero();
-    }
-    else
-    {
-      local_target_vel_ = planner_manager_->global_data_.getVelocity(t);
-      // cout << "AA" << endl;
+      min_dist_to_start = dist_to_start;
+      t_proj = t;
     }
   }
+  ROS_DEBUG("start_pt_投影点时间t_proj=%.3f，投影点到start_pt_距离=%.3f m", 
+            t_proj, min_dist_to_start);
+
+  // ========== 3. 第二步：从投影点开始累计路程，寻找局部目标点 ==========
+  Eigen::Vector3d prev_pos = planner_manager_->global_data_.getPosition(t_proj); // 投影点位置
+  for (t = t_proj; t < planner_manager_->global_data_.global_duration_; t += t_step)
+  {
+    Eigen::Vector3d pos_t = planner_manager_->global_data_.getPosition(t);
+    
+    // 计算当前轨迹段的路程（相邻点间距），累加到总路程
+    double seg_dist = (pos_t - prev_pos).norm();
+    total_dist += seg_dist;
+
+
+    // ========== 核心条件：累计路程≥规划范围，确定局部目标点 ==========
+    if (total_dist >= planning_horizen_)
+    {
+      local_target = pos_t;
+      target_found = true;
+      // 更新进度时间为当前目标点的时间（避免紊乱）
+      planner_manager_->global_data_.last_progress_time_ = t;
+      break;
+    }
+
+    prev_pos = pos_t; // 更新上一个轨迹点
+  }
+
+  // ========== 4. 边界处理：未找到目标点（遍历到轨迹末尾） ==========
+  if (!target_found)
+  {
+    local_target = end_pt_;
+    planner_manager_->global_data_.last_progress_time_ = planner_manager_->global_data_.global_duration_;
+  }
+  local_target_pt_ = local_target; // 赋值给成员变量
+
+  // ========== 5. 目标速度计算（兼容动力学约束） ==========
+  double stop_dist = (max_vel * max_vel) / (2 * max_acc);
+  if ((end_pt_ - local_target_pt_).norm() < stop_dist)
+  {
+    local_target_vel_ = Eigen::Vector3d::Zero(); // 接近终点，速度归零
+  }
+  else
+  {
+    // 取目标点对应时间的速度（安全兜底：不超过轨迹总时长）
+    double vel_t = std::min(t, planner_manager_->global_data_.global_duration_);
+    local_target_vel_ = planner_manager_->global_data_.getVelocity(vel_t);
+    // 速度上限约束
+    if (local_target_vel_.norm() > max_vel)
+    {
+      local_target_vel_ = local_target_vel_.normalized() * max_vel;
+    }
+  }
+
+}
 
 } // namespace ego_planner

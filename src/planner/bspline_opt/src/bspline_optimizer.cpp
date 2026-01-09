@@ -54,7 +54,7 @@ namespace ego_planner
     bool flag_got_start = false, flag_got_end = false, flag_got_end_maybe = false;
     // ========== 关键修改：仅检查后3/4控制点 ==========
     int N = init_points.cols();  // 总控制点数量
-    int i_start = order_ + 3 * (N - 2 * order_) / 4;  // 后3/4的起始位置
+    int i_start = order_ + 2 * (N - 2 * order_) / 3;  // 后3/4的起始位置
     int i_end = N - order_;  // 后1/3的结束位置（避免越界）
     // 确保起始位置合法（至少大于order_，小于i_end）
     i_start = std::max(i_start, order_);

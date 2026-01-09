@@ -100,6 +100,7 @@ namespace ego_planner
     void planGlobalTrajbyGivenWps();
     void getLocalTarget();
 
+
     /* ROS functions */
     void execFSMCallback(const ros::TimerEvent &e);
     void checkCollisionCallback(const ros::TimerEvent &e);
