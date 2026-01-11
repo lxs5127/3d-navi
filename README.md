@@ -22,7 +22,7 @@
 1. **libtorch**：下载 C++ 版本的 [libtorch](https://pytorch.org/)。
 2. **PCT-planner**：将其放置在 `src` 文件夹外单独编译。
 3. **ego-planner**：请参考其官方文档进行配置：[ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git)
-4. **Fast-lio**：如需使用，可运行 `.auto.sh` 脚本自动发布 `livox/lidar` 和 `livox/imu` 话题，但需手动设置 `tf` 坐标关系。
+4. **Fast-lio**：`.auto.sh` 仿真脚本自动发布 `livox/lidar` 和 `livox/imu` 话题，无需额外配置，但需手动设置 `tf` 坐标关系。
 
 ---
 
