@@ -2,6 +2,7 @@ import os
 import sys
 import pickle
 import numpy as np
+from scipy.interpolate import griddata  # 新增：用于XY坐标的高度插值
 
 from utils import *
 
@@ -28,6 +29,9 @@ class TomogramPlanner(object):
         self.map_dim = []
         self.offset = None
 
+        self.layer_elev_grids = None  # 存储每个layer的高度网格（elev_g）
+        self.grid_xy_coords = None    # 存储网格对应的物理XY坐标
+
         self.start_idx = np.zeros(3, dtype=np.int32)
         self.end_idx = np.zeros(3, dtype=np.int32)
 
@@ -53,7 +57,82 @@ class TomogramPlanner(object):
         elev_c = tomogram[4]
         elev_c = np.nan_to_num(elev_c, nan=1e6)
 
+        # 存储所有layer的高度网格（关键：后续用于XY查高度）
+        self.layer_elev_grids = elev_g
+        # 预计算网格对应的物理XY坐标（避免重复计算）
+        self._precompute_grid_xy()
+
         self.initPlanner(trav, trav_gx, trav_gy, elev_g, elev_c)
+
+    def _precompute_grid_xy(self):
+        """预计算每个网格点对应的物理XY坐标（匹配map的center和resolution）"""
+        # 生成网格索引
+        grid_h, grid_w = self.map_dim[0], self.map_dim[1]
+        y_grid_idx, x_grid_idx = np.meshgrid(np.arange(grid_w), np.arange(grid_h))
+        # 转换为物理坐标（反向复用pos2idx的逻辑）
+        x_grid = (x_grid_idx - self.offset[0]) * self.resolution + self.center[0]
+        y_grid = (y_grid_idx - self.offset[1]) * self.resolution + self.center[1]
+        # 存储为 [grid_h, grid_w, 2] （x,y）
+        self.grid_xy_coords = np.stack([x_grid, y_grid], axis=-1)
+
+    def get_layer_height_by_xy(self, layer_idx, x, y):
+        """
+        输入layer索引和物理XY坐标，返回该layer下此XY对应的真实高度
+        :param layer_idx: 分层索引（0~n_slice-1）
+        :param x: 物理X坐标
+        :param y: 物理Y坐标
+        :return: 插值后的高度值（无有效值返回-100）
+        """
+        # 边界检查
+        if layer_idx < 0 or layer_idx >= self.n_slice:
+            return -100.0
+
+        # 提取该layer的高度网格和XY坐标网格
+        elev_grid = self.layer_elev_grids[layer_idx]
+        xy_coords = self.grid_xy_coords.reshape(-1, 2)  # [N, 2]
+        elev_vals = elev_grid.reshape(-1)               # [N,]
+
+        # 过滤无效高度值（nan已被替换为-100，这里过滤掉）
+        valid_mask = elev_vals > -99.0
+        valid_xy = xy_coords[valid_mask]
+        valid_elev = elev_vals[valid_mask]
+
+        if len(valid_xy) == 0:
+            return -100.0
+
+        # 用最近邻插值（速度快）或线性插值（精度高）查询高度
+        # method='nearest' 速度快，适合实时规划；method='linear' 精度高但稍慢
+        query_height = griddata(valid_xy, valid_elev, (x, y), method='nearest', fill_value=-100.0)
+        return float(query_height)
+    
+
+    def match_best_layer(self, x, y, target_height):
+        """
+        迭代所有layer，找到与目标高度最匹配的layer（核心方法）
+        :param x: 物理X坐标
+        :param y: 物理Y坐标
+        :param target_height: 目标高度（如start_pos/end_pos的z值）
+        :return: 最佳匹配的layer索引、该layer下XY对应的高度、高度差值
+        """
+        min_diff = float('inf')
+        best_layer = 0
+        best_height = 0.0
+
+        # 迭代所有layer（可优化：先粗筛再细查，减少迭代次数）
+        for layer_idx in range(self.n_slice):
+            # 获取该layer下XY对应的真实高度
+            layer_height = self.get_layer_height_by_xy(layer_idx, x, y)
+            if layer_height == -100.0:  # 跳过无效层
+                continue
+            # 计算高度差值（绝对值）
+            diff = abs(layer_height - target_height)
+            # 更新最佳匹配
+            if diff < min_diff:
+                min_diff = diff
+                best_layer = layer_idx
+                best_height = layer_height
+
+        return best_layer, best_height, min_diff
         
     def initPlanner(self, trav, trav_gx, trav_gy, elev_g, elev_c):
         diff_t = trav[1:] - trav[:-1]
@@ -88,11 +167,27 @@ class TomogramPlanner(object):
 
     def plan(self, start_pos, end_pos):
         # TODO: calculate slice index. By default the start and end pos are all at slice 0
+
+        print("pos origin start:", start_pos)
+        print("pos origin end:", end_pos)
+
+        # 匹配起始点的最佳layer
+        start_layer, _, _ = self.match_best_layer(
+            start_pos[0], start_pos[1], start_pos[2]
+        )
+        # 匹配目标点的最佳layer
+        end_layer, _, _ = self.match_best_layer(
+            end_pos[0], end_pos[1], end_pos[2]
+        )
+        print("start_layer:" ,start_layer)
+        print("end_layer:" ,end_layer)
+        
+
         self.start_idx[1:] = self.pos2idx(start_pos[:2])
         self.end_idx[1:] = self.pos2idx(end_pos[:2])
-        self.start_idx[0] = self.pos2slice(start_pos[-1])
-        self.end_idx[0] = self.pos2slice(end_pos[-1])
-
+        self.start_idx[0] = start_layer
+        self.end_idx[0] = end_layer
+    
 
         self.planner.plan(self.start_idx, self.end_idx, True)
         path_finder: a_star.Astar = self.planner.get_path_finder()
@@ -123,23 +218,9 @@ class TomogramPlanner(object):
         # print(traj_raw,"traj_raw")
         return traj_3d
     
-    def pos2slice(self, z):
-        """将z坐标转换为切片索引"""
-        # 计算相对于起始高度的切片数
-        slice_offset = (z - self.slice_h0) / self.slice_dh
-        # 转换为整数索引并确保在有效范围内
-        slice_idx = int(np.round(slice_offset))
-        return np.clip(slice_idx, 0, self.n_slice - 1)
 
-    def get_slice_height(self, slice_idx):
-        """获取指定切片的实际高度"""
-        # slice_h0 为 ground_h+ground_dh
-        return self.slice_h0 + slice_idx * self.slice_dh
-    
     def pos2idx(self, pos):
-        print("pos origin:", pos)
         pos = pos - self.center
-        print("pos shifted:", pos)
         idx = np.round(pos / self.resolution).astype(np.int32) + self.offset
         idx = np.array([idx[1], idx[0]], dtype=np.float32)
         return idx
