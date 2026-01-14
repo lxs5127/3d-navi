@@ -22,7 +22,7 @@
 1. **libtorch**：下载 C++ 版本的 [libtorch](https://pytorch.org/)。
 2. **PCT-planner**：将其放置在 `src` 文件夹外单独编译。
 3. **ego-planner**：请参考其官方文档进行配置：[ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git)
-4. **Fast-lio**：如需使用，可运行 `.auto.sh` 脚本自动发布 `livox/lidar` 和 `livox/imu` 话题，但需手动设置 `tf` 坐标关系。
+4. **Fast-lio**：`.auto.sh` 仿真脚本自动发布 `livox/lidar` 和 `livox/imu` 话题，无需额外配置，但需手动设置 `tf` 坐标关系。
 
 ---
 
@@ -53,7 +53,7 @@ cd planner/
 ## 使用说明
 
 ### 1. 启动 RL 控制器
-由于 RL 控制器需要手柄，因此需先启动虚拟控制器：
+由于 RL 控制器需要手柄，因此需先启动虚拟手柄（注意这个不是控制器！！！）：
 ```bash
 sudo -s
 source ./devel/setup.bash
