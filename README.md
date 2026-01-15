@@ -1,7 +1,7 @@
 # 3D 导航仿真项目
 
 ## 项目介绍
-本项目通过优化融合 [PCT-planner](https://github.com/byangw/PCT_planner.git) 和 [ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git)两种路径规划算法实现3D导航，并在实际环境与Gazebo仿真环境中得到验证。此项目中使用了 Unitree A1 机器人模型以及强化学习控制器 [chy2948331536/unitree_guide](https://gitee.com/chy2948331536/unitree_guide)，其中控制器和 PCT-planner 需要 CUDA 支持。
+本项目通过优化融合 [PCT-planner](https://github.com/byangw/PCT_planner.git) 和 [ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git) 两种路径规划算法实现3D导航，并在实际环境与Gazebo仿真环境中得到验证。此项目中使用了 Unitree A1 机器人模型以及强化学习控制器 [chy2948331536/unitree_guide](https://gitee.com/chy2948331536/unitree_guide)，其中控制器和 PCT-planner 需要 CUDA 支持。
 
 ### 3D导航示例
 <div align="center">
@@ -42,16 +42,27 @@
 修改 `src/unitree_guide/unitree_guide/unitree_guide/CMakeLists.txt` 中的 `libtorch` 路径和 `CMAKE_CUDA_COMPILER` 路径。
 
 ### 2. 安装 ego-planner
-请参考 [ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git) 官方文档安装相关依赖。
-
-### 3. 编译项目
 进入 ROS 工作空间并执行以下命令：
 ```bash
+sudo apt-get install libarmadillo-dev
 catkin_make
 ```
 
-### 4. 安装 PCT-planner
-请参考 [PCT-planner](https://github.com/byangw/PCT_planner.git) 官方文档安装依赖，然后使用以下命令进行编译：
+### 3. 安装 PCT-planner
+
+#### Environment
+
+- Ubuntu >= 20.04
+- ROS >= Noetic with ros-desktop-full installation
+- CUDA >= 11.7
+
+#### Python（建议使用虚拟环境）
+
+- Python >= 3.8
+- [CuPy](https://docs.cupy.dev/en/stable/install.html) with CUDA >= 11.7
+- Open3d
+
+####  Build & Install
 ```bash
 cd planner/
 ./build_thirdparty.sh
