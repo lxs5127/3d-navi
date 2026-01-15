@@ -39,16 +39,18 @@
 ## 安装步骤
 
 ### 1. 配置 libtorch 和 CUDA 路径
+
 修改 `src/unitree_guide/unitree_guide/unitree_guide/CMakeLists.txt` 中的 `libtorch` 路径和 `CMAKE_CUDA_COMPILER` 路径。
 
-### 2. 安装 Local-planner
+### 2. 安装 ego-planner
+
 进入 ROS 工作空间并执行以下命令：
 ```bash
 sudo apt-get install libarmadillo-dev
 catkin_make
 ```
 
-### 3. 安装 Global-planner
+### 3. 安装 PCT-planner
 
 #### Environment
 
