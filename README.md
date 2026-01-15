@@ -5,22 +5,22 @@
 
 ### 3D导航示例
 <div align="center">
-  <img src="/src/image/878355907.gif" width="800"/>
+  <img src="/src/image/878355907.gif" width="1000"/>
 </div>
 
 <div align="center">
-  <img src="/src/image/312415131.gif" width="800"/>
+  <img src="/src/image/312415131.gif" width="1000"/>
 </div>
 
 
 
 ### 3D规划示例
 <div align="center">
-  <img src="/src/image/123141123.gif" width="800"/>
+  <img src="/src/image/123141123.gif" width="1000"/>
 </div>
 
 <div align="center">
-  <img src="/src/image/123154231.gif" width="800"/>
+  <img src="/src/image/123154231.gif" width="1000"/>
 </div>
 
 ---
