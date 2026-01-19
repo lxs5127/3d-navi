@@ -11,6 +11,7 @@ from lib import a_star, ele_planner, traj_opt
 
 rsg_root = os.path.dirname(os.path.abspath(__file__)) + '/../..'
 
+print("rsg_root_path: ",rsg_root)
 
 class TomogramPlanner(object):
     def __init__(self, cfg):
@@ -21,6 +22,7 @@ class TomogramPlanner(object):
 
         self.tomo_dir = rsg_root + self.cfg.wrapper.tomo_dir
 
+        self.tomogram=None
         self.resolution = None
         self.center = None
         self.n_slice = None
@@ -39,30 +41,30 @@ class TomogramPlanner(object):
         with open(self.tomo_dir + tomo_file + '.pickle', 'rb') as handle:
             data_dict = pickle.load(handle)
 
-            tomogram = np.asarray(data_dict['data'], dtype=np.float32)
+            self.tomogram = np.asarray(data_dict['data'], dtype=np.float32)
 
             self.resolution = float(data_dict['resolution'])
             self.center = np.asarray(data_dict['center'], dtype=np.double)
-            self.n_slice = tomogram.shape[1]
+            self.n_slice = self.tomogram.shape[1]
             self.slice_h0 = float(data_dict['slice_h0'])
             self.slice_dh = float(data_dict['slice_dh'])
-            self.map_dim = [tomogram.shape[2], tomogram.shape[3]]
+            self.map_dim = [self.tomogram.shape[2], self.tomogram.shape[3]]
             self.offset = np.array([int(self.map_dim[0] / 2), int(self.map_dim[1] / 2)], dtype=np.int32)
 
-        trav = tomogram[0]
-        trav_gx = tomogram[1]
-        trav_gy = tomogram[2]
-        elev_g = tomogram[3]
+        trav = self.tomogram[0]
+        trav_gx = self.tomogram[1]
+        trav_gy = self.tomogram[2]
+        elev_g = self.tomogram[3]
         elev_g = np.nan_to_num(elev_g, nan=-100)
-        elev_c = tomogram[4]
+        elev_c = self.tomogram[4]
         elev_c = np.nan_to_num(elev_c, nan=1e6)
-
         # 存储所有layer的高度网格（关键：后续用于XY查高度）
         self.layer_elev_grids = elev_g
-        # 预计算网格对应的物理XY坐标（避免重复计算）
+        # 预计算网格对应的物理XY坐标（避免重复计算）,可行性分析的trav导入，在目标点decide_layer，选择最低cost的layer
         self._precompute_grid_xy()
-
         self.initPlanner(trav, trav_gx, trav_gy, elev_g, elev_c)
+      
+
 
     def _precompute_grid_xy(self):
         """预计算每个网格点对应的物理XY坐标（匹配map的center和resolution）"""
@@ -87,12 +89,10 @@ class TomogramPlanner(object):
         if layer_idx < 0 or layer_idx >= self.n_slice:
             return -100.0
 
-        # 提取该layer的高度网格和XY坐标网格
         elev_grid = self.layer_elev_grids[layer_idx]
-        xy_coords = self.grid_xy_coords.reshape(-1, 2)  # [N, 2]
-        elev_vals = elev_grid.reshape(-1)               # [N,]
+        xy_coords = self.grid_xy_coords.reshape(-1, 2)  
+        elev_vals = elev_grid.reshape(-1)              
 
-        # 过滤无效高度值（nan已被替换为-100，这里过滤掉）
         valid_mask = elev_vals > -99.0
         valid_xy = xy_coords[valid_mask]
         valid_elev = elev_vals[valid_mask]
@@ -100,10 +100,10 @@ class TomogramPlanner(object):
         if len(valid_xy) == 0:
             return -100.0
 
-        # 用最近邻插值（速度快）或线性插值（精度高）查询高度
-        # method='nearest' 速度快，适合实时规划；method='linear' 精度高但稍慢
         query_height = griddata(valid_xy, valid_elev, (x, y), method='nearest', fill_value=-100.0)
         return float(query_height)
+    
+
     
 
     def match_best_layer(self, x, y, target_height):
@@ -114,25 +114,30 @@ class TomogramPlanner(object):
         :param target_height: 目标高度（如start_pos/end_pos的z值）
         :return: 最佳匹配的layer索引、该layer下XY对应的高度、高度差值
         """
-        min_diff = float('inf')
+        min_cost = float('inf')
         best_layer = 0
-        best_height = 0.0
+        best_cost = 0.0
 
         # 迭代所有layer（可优化：先粗筛再细查，减少迭代次数）
         for layer_idx in range(self.n_slice):
             # 获取该layer下XY对应的真实高度
             layer_height = self.get_layer_height_by_xy(layer_idx, x, y)
-            if layer_height == -100.0:  # 跳过无效层
+            # 跳过无效层
+            if layer_height == -100.0:
                 continue
             # 计算高度差值（绝对值）
             diff = abs(layer_height - target_height)
+            if diff > self.slice_dh :  
+                continue
+            # 先将物理XY坐标转换为网格索引（用于查costmap）
+            grid_idx = self.pos2idx(np.array([x, y])).astype(int)
+            layer_cost_=self.tomogram[0][layer_idx][grid_idx[1]][grid_idx[0]]  
             # 更新最佳匹配
-            if diff < min_diff:
-                min_diff = diff
+            if layer_cost_ < min_cost:
+                min_cost = layer_cost_
                 best_layer = layer_idx
-                best_height = layer_height
-
-        return best_layer, best_height, min_diff
+                best_cost = layer_cost_
+        return best_layer, best_cost, min_cost
         
     def initPlanner(self, trav, trav_gx, trav_gy, elev_g, elev_c):
         diff_t = trav[1:] - trav[:-1]
@@ -164,6 +169,8 @@ class TomogramPlanner(object):
             trav_gy.reshape(-1, trav_gy.shape[-1]).astype(np.double),
             -trav_gx.reshape(-1, trav_gx.shape[-1]).astype(np.double)
         )
+
+
 
     def plan(self, start_pos, end_pos):
         # TODO: calculate slice index. By default the start and end pos are all at slice 0
