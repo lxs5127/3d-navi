@@ -11,7 +11,6 @@ from lib import a_star, ele_planner, traj_opt
 
 rsg_root = os.path.dirname(os.path.abspath(__file__)) + '/../..'
 
-print("rsg_root_path: ",rsg_root)
 
 class TomogramPlanner(object):
     def __init__(self, cfg):
@@ -116,13 +115,13 @@ class TomogramPlanner(object):
         """
         min_cost = float('inf')
         best_layer = 0
-        best_cost = 0.0
 
         # 迭代所有layer（可优化：先粗筛再细查，减少迭代次数）
         for layer_idx in range(self.n_slice):
             # 获取该layer下XY对应的真实高度
             layer_height = self.get_layer_height_by_xy(layer_idx, x, y)
             # 跳过无效层
+            # print("layer_height",layer_height)
             if layer_height == -100.0:
                 continue
             # 计算高度差值（绝对值）
@@ -131,13 +130,15 @@ class TomogramPlanner(object):
                 continue
             # 先将物理XY坐标转换为网格索引（用于查costmap）
             grid_idx = self.pos2idx(np.array([x, y])).astype(int)
-            layer_cost_=self.tomogram[0][layer_idx][grid_idx[1]][grid_idx[0]]  
+            layer_cost_=self.tomogram[0][layer_idx][grid_idx[1]][grid_idx[0]]
+            #去除代价不存在的层级，即没有tomogram分析点云
+            if layer_cost_==0:
+                continue
             # 更新最佳匹配
             if layer_cost_ < min_cost:
                 min_cost = layer_cost_
                 best_layer = layer_idx
-                best_cost = layer_cost_
-        return best_layer, best_cost, min_cost
+        return best_layer
         
     def initPlanner(self, trav, trav_gx, trav_gy, elev_g, elev_c):
         diff_t = trav[1:] - trav[:-1]
@@ -179,11 +180,11 @@ class TomogramPlanner(object):
         print("pos origin end:", end_pos)
 
         # 匹配起始点的最佳layer
-        start_layer, _, _ = self.match_best_layer(
+        start_layer = self.match_best_layer(
             start_pos[0], start_pos[1], start_pos[2]
         )
         # 匹配目标点的最佳layer
-        end_layer, _, _ = self.match_best_layer(
+        end_layer= self.match_best_layer(
             end_pos[0], end_pos[1], end_pos[2]
         )
         print("start_layer:" ,start_layer)
