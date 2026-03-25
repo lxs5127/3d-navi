@@ -224,3 +224,65 @@ def inflationKernel(n_row, n_col, half_kernel_size):
     )
                             
     return inflation_kernel
+
+
+def distanceTransformKernel(n_row, n_col, half_kernel_size, cost_barrier):
+    dt_kernel = cp.ElementwiseKernel(
+        in_params='raw U trav_cost',
+        out_params='raw U dist_to_barrier',
+        preamble=utils_map(n_row, n_col),
+        operation=string.Template(
+            '''
+            if (trav_cost[i] >= ${cost_barrier} - 0.001f) {
+                dist_to_barrier[i] = 0.0f;
+                return;
+            }
+            float min_d = 1e6f;
+            for ( int dy = -${half_kernel_size}; dy <= ${half_kernel_size}; dy++ ) 
+            {
+                for ( int dx = -${half_kernel_size}; dx <= ${half_kernel_size}; dx++ ) 
+                {
+                    int idx = getIdxRelative(i, dx, dy);
+                    if ( idx >= 0 && trav_cost[idx] >= ${cost_barrier} - 0.001f) {
+                        float d = sqrtf((float)(dx*dx + dy*dy));
+                        if (d < min_d) min_d = d;
+                    }
+                }
+            }
+            dist_to_barrier[i] = min_d;  
+            '''
+        ).substitute(
+            half_kernel_size=half_kernel_size,
+            cost_barrier=cost_barrier
+        ),
+        name='distance_transform_kernel'
+    )
+    return dt_kernel
+
+
+def adjustCostByDistanceKernel(n_row, n_col,safe_margin, cost_barrier,resolution):
+    """Increase trav_cost for cells close to barrier: smaller distance -> higher cost"""
+    adjust_kernel = cp.ElementwiseKernel(
+        in_params='raw U trav_cost, raw U dist_to_barrier',
+        out_params='raw U trav_cost_out',
+        preamble=utils_map(n_row, n_col),
+        operation=string.Template(
+            '''
+            if (trav_cost[i] >= ${cost_barrier} - 0.001f) {
+                trav_cost_out[i] = trav_cost[i];      // already barrier, keep unchanged
+                return;
+            }
+
+            float dist = dist_to_barrier[i];
+            float max_influence_dist = 1.5*${safe_margin}/${resolution};   //1.5 times the safe margin
+            float penalty = trav_cost_out[i] * (dist / max_influence_dist);
+            trav_cost_out[i]=max(0.001f,trav_cost_out[i]-penalty);
+            '''
+        ).substitute(
+            cost_barrier=cost_barrier,
+            safe_margin=safe_margin,
+            resolution=resolution
+        ),
+        name='adjust_cost_by_distance_kernel'
+    )
+    return adjust_kernel

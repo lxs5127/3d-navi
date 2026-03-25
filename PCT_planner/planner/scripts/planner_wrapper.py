@@ -121,7 +121,6 @@ class TomogramPlanner(object):
             # 获取该layer下XY对应的真实高度
             layer_height = self.get_layer_height_by_xy(layer_idx, x, y)
             # 跳过无效层
-            # print("layer_height",layer_height)
             if layer_height == -100.0:
                 continue
             # 计算高度差值（绝对值）
@@ -130,7 +129,12 @@ class TomogramPlanner(object):
                 continue
             # 先将物理XY坐标转换为网格索引（用于查costmap）
             grid_idx = self.pos2idx(np.array([x, y])).astype(int)
-            layer_cost_=self.tomogram[0][layer_idx][grid_idx[1]][grid_idx[0]]
+            height, width = self.tomogram[0][layer_idx].shape
+            # 安全地 clip 行和列索引
+            row = np.clip(grid_idx[1], 0, height - 1)
+            col = np.clip(grid_idx[0], 0, width - 1)
+            # 然后安全访问
+            layer_cost_ = self.tomogram[0][layer_idx][row][col]
             #去除代价不存在的层级，即没有tomogram分析点云
             if layer_cost_==0:
                 continue
@@ -162,7 +166,7 @@ class TomogramPlanner(object):
             max_heading_rate=self.max_heading_rate, use_quintic=self.use_quintic
         )
         self.planner.init_map(
-            20, 15, self.resolution, self.n_slice, 0.1,
+            20, 15, self.resolution, self.n_slice, 1,
             trav.reshape(-1, trav.shape[-1]).astype(np.double),
             elev_g.reshape(-1, elev_g.shape[-1]).astype(np.double),
             elev_c.reshape(-1, elev_c.shape[-1]).astype(np.double),
@@ -176,8 +180,8 @@ class TomogramPlanner(object):
     def plan(self, start_pos, end_pos):
         # TODO: calculate slice index. By default the start and end pos are all at slice 0
 
-        print("pos origin start:", start_pos)
-        print("pos origin end:", end_pos)
+        # print("pos origin start:", start_pos)
+        # print("pos origin end:", end_pos)
 
         # 匹配起始点的最佳layer
         start_layer = self.match_best_layer(
@@ -187,8 +191,8 @@ class TomogramPlanner(object):
         end_layer= self.match_best_layer(
             end_pos[0], end_pos[1], end_pos[2]
         )
-        print("start_layer:" ,start_layer)
-        print("end_layer:" ,end_layer)
+        # print("start_layer:" ,start_layer)
+        # print("end_layer:" ,end_layer)
         
 
         self.start_idx[1:] = self.pos2idx(start_pos[:2])
@@ -232,5 +236,3 @@ class TomogramPlanner(object):
         idx = np.round(pos / self.resolution).astype(np.int32) + self.offset
         idx = np.array([idx[1], idx[0]], dtype=np.float32)
         return idx
-    
-    

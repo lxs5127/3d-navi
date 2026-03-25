@@ -48,6 +48,21 @@ class Tomogram(object):
             self.map_dim_y,
             self.half_inf_k_size
         )
+
+
+        # 新增：距离变换 kernel（使用与 inflation 相同的 kernel size）
+        self.dist_transform_kernel = distanceTransformKernel(
+            self.map_dim_x, self.map_dim_y,
+            self.half_inf_k_size,          # 复用 inflation 的窗口大小
+            self.cost_barrier,
+        )
+        self.adjust_cost_kernel = adjustCostByDistanceKernel(
+            self.map_dim_x, 
+            self.map_dim_y,
+            self.safe_margin,
+            self.cost_barrier,
+            self.resolution,     
+        )
         
         # 初始化膨胀表（用于后续成本膨胀计算）
         self.inf_table = cp.zeros(
@@ -140,6 +155,25 @@ class Tomogram(object):
             self.trav_cost,
             size=(self.n_slice_init * self.map_dim_x * self.map_dim_y)
         )
+
+        # ==================== 新增：距离变换 + 代价提升（紧跟 travKernel） ====================
+        dist_to_barrier = cp.zeros_like(self.trav_cost, dtype=cp.float32)
+
+        self.dist_transform_kernel(
+            self.trav_cost, 
+            dist_to_barrier,
+            size=(self.n_slice_init * self.map_dim_x * self.map_dim_y)
+        )
+
+        # 注意：第三个参数传 self.trav_cost（in-place 输出）
+        self.adjust_cost_kernel(
+            self.trav_cost,          # 输入（读）
+            dist_to_barrier,         # 距离场
+            self.trav_cost,          # 输出（写）← 同一个数组
+            size=(self.n_slice_init * self.map_dim_x * self.map_dim_y)
+        )
+        # =================================================================================
+
 
         self.inflation_kernel(
             self.trav_cost, self.inf_table,

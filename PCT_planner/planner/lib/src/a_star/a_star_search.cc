@@ -25,8 +25,9 @@ void Astar::Init(const double cost_threshold, const int num_layers,
                  const Eigen::MatrixXd& height_map,
                  const Eigen::MatrixXd& ele_map) {
   auto t0 = std::chrono::high_resolution_clock::now();
+
   cost_threshold_ = cost_threshold;
-step_cost_weight_  = step_cost_weight;
+  step_cost_weight_  = step_cost_weight;
 
   max_x_ = cost_map.cols();
   max_y_ = cost_map.rows() / num_layers;
@@ -121,13 +122,10 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
   
   auto start_node = &grid_map_[start[0]][start[2]][start[1]];
   auto goal_node = &grid_map_[goal[0]][goal[2]][goal[1]];
-
-  
-  
   start_node->g = 0.0;
 
   if (goal_node->cost > cost_threshold_) {
-    printf("goal node is not reachable, cost: %f", goal_node->cost);
+    printf("goal node is not reachable, cost: %f, layer: %d\n", goal_node->cost, goal_node->layer);
     return false;
   }
   // 优先队列（open_set）：按节点的f值（g+h）从小到大排序（通过NodeCompare实现）
@@ -140,9 +138,7 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
   printf("start searching\n");
 
   Node* best_node = start_node;
-  double iter=0;
-  while (!open_set.empty() && iter<100000) {
-    iter++;
+  while (!open_set.empty()) {
     // 步骤1：从开放集取出 f 值最小的节点（当前节点）
     Node* current_node = open_set.top();
     open_set.pop();
@@ -159,11 +155,6 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
           std::chrono::high_resolution_clock::now() - t0);
       printf("path found, time elapsed: %f ms\n",
              duration.count() / 1000.0);
-      //触发后端优化
-      if ( this->RefinePathSerach())
-      {
-       cout<<"refine success"<<endl;
-      }
       return true;
     }
 
@@ -190,10 +181,9 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
       auto neighbor_node = &grid_map_[layer][i][j];
 
       // 检查邻居节点是否可通行
-      if (neighbor_node->cost > cost_threshold_+5) {
+      if (neighbor_node->cost > cost_threshold_) {
         // 若成本超过阈值，但ele值较大（可能是特殊地形），进一步检查高度差
         if (abs(neighbor_node->ele) < 0.5 ) {
-
           continue;// ele值小，直接视为不可通行
         } else {
           // ele值大，但高度差超过0.3也视为不可通行
@@ -203,15 +193,14 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
         }
       }       
       // 计算当前节点到邻居节点的代价
-      //  if (diff_cost < step_cost) step_cost = 0.0;
-      auto diff = neighbor_node->idx - current_node->idx;// 坐标差
-      double step_cost = step_cost_weight_ *GetNeighborAverageCost(neighbor_node);// 步骤成本（受权重和节点成本影响）
+      auto diff = neighbor_node->idx - current_node->idx;// 坐标差      
+      double step_cost = step_cost_weight_ * neighbor_node->cost;
+
 
       double diff_cost=std::sqrt(diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
 
       // 总代价 = 当前节点g值 + 欧氏距离（坐标差的3D距离,用于靠近下一个点） + 步骤成本（远离障碍物）
-      tentative_g =
-          current_node->g + diff_cost +step_cost;
+      tentative_g = current_node->g + diff_cost +step_cost;
       
 
       // 检查邻居是否已在closed_set中
@@ -255,7 +244,6 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
 }
 
 
-
 int Astar::DecideLayer(const Node* cur_node) const {
   int original_layer = cur_node->layer;  // 初始图层（默认返回值）
   int i = cur_node->idx[1];
@@ -265,40 +253,31 @@ int Astar::DecideLayer(const Node* cur_node) const {
   int best_layer = original_layer;
   double min_cost = grid_map_[original_layer][i][j].cost;  // 初始化为当前图层的代价
 
-  // 遍历当前节点的所有邻居（扩大空间搜索范围）
-  for (const auto& neighbor : kNeighbors) {
-    int ni = i + neighbor[0];  // 邻居节点的行坐标
-    int nj = j + neighbor[1];  // 邻居节点的列坐标
+  // 遍历多层偏移（扩大图层搜索范围）
+  for (const auto offset : search_layers_offset_) {
+    int cur_layer = original_layer + offset;
 
-    // 检查邻居坐标是否越界
-    if (ni < 0 || ni >= max_y_ || nj < 0 || nj >= max_x_) {
+    // 检查图层是否越界
+    if (cur_layer < 0 || cur_layer >= max_layers_) {
       continue;
     }
 
-    // 遍历多层偏移（扩大图层搜索范围）
-    for (const auto offset : search_layers_offset_) {
-      int cur_layer = original_layer + offset;
+    // 获取当前搜索节点
+    // const Node& search_node = grid_map_[cur_layer][ni][nj];
+    const Node& search_node = grid_map_[cur_layer][i][j];
 
-      // 检查图层是否越界
-      if (cur_layer < 0 || cur_layer >= max_layers_) {
-        continue;
-      }
+    // 筛选：高度差需在合理范围内（避免高度突变）
+    if (std::abs(search_node.height - cur_height) > 0.2) {
+      continue;
+    //便免越界得到空的值
+    }else if (search_node.cost > cost_threshold_ || search_node.cost <=0) {
+      continue;
+    }
 
-      // 获取当前搜索节点
-      const Node& search_node = grid_map_[cur_layer][ni][nj];
-
-      // 筛选：高度差需在合理范围内（避免高度突变）
-      if (std::abs(search_node.height - cur_height) > 0.2) {
-        continue;
-      }else if (search_node.cost > cost_threshold_) {
-        continue;
-      }
-
-      // 更新最小代价图层
-      if (search_node.cost < min_cost) {
-        min_cost = search_node.cost;
-        best_layer = cur_layer;
-      }
+    // 更新最小代价图层
+    if (search_node.cost < min_cost) {
+      min_cost = search_node.cost;
+      best_layer = cur_layer;
     }
   }
 
@@ -335,74 +314,6 @@ double Astar::GetHeuristic(const Node* node1, const Node* node2) const {
   // cost += std::abs(node1->idx[0] - node2->idx[0]) * 10;
   return cost;
 }
-
-bool Astar::RefinePathSerach() {
-    if (search_result_.empty()) return false;
-
-    // 优化阈值：步骤代价超过此值的点需要进行优化
-    const double STEP_COST_THRESHOLD = cost_threshold_/2;  // 可根据实际场景调整
-    // 动态窗口大小：每个点周围搜索的邻域范围
-    const int WINDOW_SIZE = 2;               // 可根据精度需求调整
-
-    std::vector<Node*> refined_path;
-    refined_path.push_back(search_result_[0]);  // 保留起点
-
-    for (size_t i = 1; i < search_result_.size() - 1; ++i) {  // 跳过起点和终点
-        Node* current = search_result_[i];
-        double current_step_cost = GetNeighborAverageCost(current);
-        // 如果当前点代价低于阈值，直接保留
-        if (current_step_cost <= STEP_COST_THRESHOLD) {
-            refined_path.push_back(current);
-            continue;
-        }
-        // 代价过高，启动动态窗口优化
-        Node* best_candidate = current;
-        double min_cost = current_step_cost;
-
-        // 搜索当前点周围的动态窗口（多层+多邻域）
-        for (int dy = -WINDOW_SIZE; dy <= WINDOW_SIZE; ++dy) {
-            for (int dx = -WINDOW_SIZE; dx <= WINDOW_SIZE; ++dx) {
-                if (dx == 0 && dy == 0) continue;  // 跳过自身
-
-                int y = current->idx[1] + dy;
-                int x = current->idx[2] + dx;
-                if (y < 0 || y >= max_y_ || x < 0 || x >= max_x_) continue;
-              
-                //只在当前层进行搜索
-                Node* candidate = &grid_map_[current->layer][y][x];
-                // 检查候选点是否可通行
-                if (candidate->cost > cost_threshold_) continue;
-                // 检查与前后点的连通性（高度差限制）
-                Node* prev = refined_path.back();
-                Node* next = search_result_[i + 1];
-                if (std::abs(candidate->height - prev->height) > 0.3) continue;
-                if (std::abs(candidate->height - next->height) > 0.3) continue;
-
-                // 计算候选点的综合代价（步骤代价+平滑性代价）
-                double candidate_cost = candidate->cost;
-                double smooth_cost = (candidate->idx - prev->idx).norm() + 
-                                    (candidate->idx - next->idx).norm();
-                double total_cost = candidate_cost + 2 * smooth_cost;  // 平滑性权重
-
-                if (total_cost < min_cost) {
-                    min_cost = total_cost;
-                    best_candidate = candidate;
-                }
-            }
-        
-        }
-        refined_path.push_back(best_candidate);
-    }
-
-    // 保留终点
-    refined_path.push_back(search_result_.back());
-
-    // 替换原路径
-    search_result_.swap(refined_path);
-    return true;
-}
-
-
 
 
 std::vector<PathPoint> Astar::GetPathPoints() const {
@@ -492,29 +403,4 @@ Eigen::MatrixXd Astar::GetEleLayer(int layer) const {
     }
   }
   return ele_layer;
-}
-
-double Astar::GetNeighborAverageCost( const Node* node) {
-    int count = 1;
-    double total_cost = node->cost;
-    // 遍历8个方向
-    const std::vector<Eigen::Vector2i> kDirs = {
-        {-1, -1}, {-1, 0}, {-1, 1},
-        {0, -1},  {0, 1},
-        {1, -1},  {1, 0}, {1, 1}
-    };
-    for (const auto& dir : kDirs) {
-        int i = node->idx[1] + dir[0];//向xy方向添加节点
-        int j = node->idx[2] + dir[1];
-        // 检查边界
-        if (i < 0 || i >= max_y_ || j < 0 || j >= max_x_) {
-          continue;
-        }
-         // 距离越近权重越高（曼哈顿距离+1避免除零）
-        double np_cost= grid_map_[node->layer][i][j].cost;
-        total_cost += np_cost < node->cost ? node->cost*4:np_cost;
-        count++;
-    }
-
-    return count > 0 ? total_cost / count : 0.0; // 防止除零
 }

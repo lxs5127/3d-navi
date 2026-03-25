@@ -1,6 +1,5 @@
 import sys
 import argparse
-import threading
 import numpy as np
 
 import rospy
@@ -20,7 +19,7 @@ sys.path.append('../')
 from config import Config
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--scene', type=str, default='Spiral', help='Name of the scene. Available: [\'Spiral\', \'Building\', \'Plaza\']')
+parser.add_argument('--scene', type=str, default='Building', help='Name of the scene. Available: [\'Spiral\', \'Building\', \'Plaza\']')
 args = parser.parse_args()
 
 cfg = Config()
@@ -28,7 +27,6 @@ cfg = Config()
 
 if args.scene == 'Building':
     tomo_file = 'building2_9'
-    
     start_pos = np.array([-5.5, 6, 0.5], dtype=np.float32)
     end_pos = np.array([2, -3, 4.5], dtype=np.float32)
 
@@ -45,7 +43,7 @@ PLAN_INTERVAL = 0.5  # 规划检查间隔（秒）
 def plan_callback(event):  # 关键修改：添加event参数接收TimerEvent
     """定时器回调函数：执行路径规划并发布"""
     global last_planned_end_pos, last_planned_start_pos,end_pos, start_pos, plan_timer
-    
+
     # 检查位置是否发生变化（考虑浮点数精度）
     position_changed = True
     if last_planned_start_pos is not None and last_planned_end_pos is not None:
@@ -194,17 +192,23 @@ def make6DofMarker(position,name,fixed=True,show_6dof = True):
 
     server.applyChanges()
 
+
+
 def pct_plan():
     planner.loadTomogram(tomo_file)
-    # publish_culster_marker()
+
     make6DofMarker(start_pos,"start_pos", show_6dof=True)
     make6DofMarker(end_pos, "end_pos",show_6dof=True)
-    print("初始目标位置", end_pos)
+    
+    # print("初始目标位置", end_pos)
     
     # 启动定时器（首次延迟PLAN_INTERVAL后执行）
     global plan_timer
     plan_timer = rospy.Timer(rospy.Duration(PLAN_INTERVAL), plan_callback, oneshot=True)
     return
+
+
+
 
 if __name__ == '__main__':
     global server
@@ -212,4 +216,4 @@ if __name__ == '__main__':
     server = InteractiveMarkerServer("basic_controls")
     pct_plan()
     rospy.spin()
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/cjh/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/cjh/3d-navi/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib

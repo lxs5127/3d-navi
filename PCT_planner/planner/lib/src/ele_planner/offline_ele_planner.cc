@@ -1,5 +1,7 @@
 #include "ele_planner/offline_ele_planner.h"
 #include <iostream>
+#include <fstream>      // 新增：用于文件操作
+#include <iomanip>      // 可选：用于格式化输出
 
 void OfflineElePlanner::InitMap(
     const double a_start_cost_threshold, const double safe_cost_margin,
@@ -27,6 +29,23 @@ bool OfflineElePlanner::Plan(const Eigen::Vector3i& start,
 
   if (optimize) {
     path_ = path_finder_.GetPathPoints();
+
+// ====================== 修改部分：写入 log 文件 ======================
+    std::ofstream log_file("offline_ele_planner_path.log", std::ios::trunc);  // 追加模式
+
+    if (log_file.is_open()) {
+      for (const auto& point : path_) {
+        log_file << point.x << "," 
+                 << point.y << "," 
+                 << point.layer << "\n";
+      }
+      
+      log_file.close();
+    } else {
+      std::cerr << "Warning: Cannot open offline_ele_planner_path.log for writing!\n";
+    }
+    // ===================================================================
+   
     path_.front().ref_v = 1;
     path_.back().ref_v = 1;
 
