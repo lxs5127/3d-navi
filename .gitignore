@@ -1,0 +1,40 @@
+# ROS/Catkin build directories
+build/
+devel/
+install/
+log/
+.catkin_workspace
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+__pycache__/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Catkin specific
+CATKIN_IGNORE
+
+# Third party libraries
+**/install/
+**/lib/3rdparty/

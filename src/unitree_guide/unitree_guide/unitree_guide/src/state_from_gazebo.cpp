@@ -14,6 +14,10 @@ ros::Publisher robotVelocity_BASE_frame_pub;
 string robot_name = "a1";
 nav_msgs::Odometry Odom;
 double x=0, y=0, z=0, roll=0, pitch=0, yaw=0;
+// 是否发布 map->odom / odom->base TF
+// 使用 FAST_LIO_LOCALIZATION_HUMANOID (open3d_loc) 定位时必须关闭，
+// 否则与 open3d_loc 发布的 map->odom / map->base 冲突，TF 会来回跳变
+bool publish_tf = true;
 
 
 void callback_BASE(const gazebo_msgs::LinkStates::ConstPtr &msg) {
@@ -37,8 +41,9 @@ void callback_BASE(const gazebo_msgs::LinkStates::ConstPtr &msg) {
     transform_odom2map.setOrigin(tf::Vector3(x,
                                     y,
                                     z));
-    // 发布odom到map的tf关系
-    bf1.sendTransform(tf::StampedTransform(transform_odom2map, ros::Time::now(), "map", "odom"));
+    // 发布odom到map的tf关系 (open3d_loc 定位模式下关闭, 由其发布 map->odom)
+    if (publish_tf)
+        bf1.sendTransform(tf::StampedTransform(transform_odom2map, ros::Time::now(), "map", "odom"));
     
     //求变化矩阵的逆解，用于推算map到odom的关系，以便能得到base到map的关系，及
     tf::Transform transform_map2odom = transform_odom2map.inverse();
@@ -65,13 +70,14 @@ void callback_BASE(const gazebo_msgs::LinkStates::ConstPtr &msg) {
         msg->twist[index].angular.z);
     tf::Vector3 transformed_angular_vel = transform_map2odom * angular_vel;
     
-    //发布base到odom的tf变换
+    //发布base到odom的tf变换 (open3d_loc 定位模式下关闭, 由其发布 map->base)
     static tf::TransformBroadcaster bf2;
     tf::Transform transform_odom2base;
     transform_odom2base.setRotation(q_odom);
     transform_odom2base.setOrigin(pt_odom);
 
-    bf2.sendTransform(tf::StampedTransform(transform_odom2base, ros::Time::now(), "odom", "base"));
+    if (publish_tf)
+        bf2.sendTransform(tf::StampedTransform(transform_odom2base, ros::Time::now(), "odom", "base"));
 
     Odom.header.stamp = ros::Time::now();
     Odom.header.frame_id = "odom";
@@ -127,6 +133,8 @@ int main(int argc, char **argv) {
     double roll  = atof(argv[6]);
   
     nh.param<std::string>("robot_name", robot_name, string("a1"));
+    // ~publish_tf 参数：默认 true（原行为）。接 open3d_loc 定位时置 false
+    nh.param<bool>("publish_tf", publish_tf, true);
     tfState_BASE_sub = node.subscribe<gazebo_msgs::LinkStates>("/gazebo/link_states", 10, callback_BASE);
     robotVelocity_BASE_frame_pub = node.advertise<nav_msgs::Odometry>("/Odometry_gazebo", 1);
 

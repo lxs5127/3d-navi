@@ -27,7 +27,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-catkin_make -DCATKIN_WHITELIST_PACKAGES="unitree_guide"
+catkin_make -DCATKIN_WHITELIST_PACKAGES="unitree_guide;livox_ros_driver2" -DROS_EDITION=ROS1
 if [ $? -ne 0 ]; then
     echo "catkin build failed. Please check for errors."
     exit 1
@@ -48,19 +48,6 @@ else
     echo "Failed to launch gazeboSim.launch. Exiting."
     exit 1
 fi
-
-#Step 4:打开雷达工作空间，并打开雷达fast-lio节点
-# sleep 2s
-# cd /home/cjh/livox_ws
-# source ./devel/setup.bash
-# roslaunch fast_lio mapping_mid360.launch&
-# LAUNCH_PID=$!
-# if [ $? -eq 0 ]; then
-#     echo "Successfully launched mapping_mid360.launch (PID: $LAUNCH_PID)."
-# else
-#     echo "Failed to launch mapping_mid360.launch. Exiting."
-#     exit 1
-# fi
 
 # Step 5: 返回到 unitree_guide 目录
 # sleep 5s

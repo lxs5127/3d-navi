@@ -99,7 +99,7 @@ def main():
         sub_mmw_cloud = rospy.Subscriber('/scan', PointCloud, mmw_handler)
         
         # pub_laser_cloud = rospy.Publisher("livox/lidar", PointCloud2, queue_size=2000)
-        pub = rospy.Publisher('/livox/lidar2', CustomMsg, queue_size=10)
+        pub = rospy.Publisher('/livox/lidar', CustomMsg, queue_size=10)
 
         # 保持节点运行
         rospy.spin()

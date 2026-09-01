@@ -1,0 +1,30 @@
+<launch>
+  <!-- 仿真用 Fast-LIO (Mid360 雷达定位)
+       使用前提: 已 source /home/lxs/livox/fast_lio_ws/devel/setup.bash
+       与实机区别: use_sim_time=true, 关闭 pcd 自动保存 -->
+  <arg name="rviz" default="false" />
+
+  <rosparam command="load" file="$(find fast_lio)/config/mid360.yaml" />
+
+  <!-- 仿真 extrinsic 修正：yaml 里是实机标定值（lidar-in-imu = [-0.011,-0.023,0.044]），
+       但仿真 URDF 的安装是 imu-in-laser = (-0.011,-0.02329,0.04412)，
+       即 lidar-in-imu = (0.011, 0.02329, -0.04412)。不修正的话点云有 ~5cm 系统性偏移。 -->
+  <rosparam param="mapping/extrinsic_T">[0.011, 0.02329, -0.04412]</rosparam>
+
+  <param name="feature_extract_enable" type="bool" value="0"/>
+  <param name="point_filter_num" type="int" value="3"/>
+  <param name="max_iteration" type="int" value="3" />
+  <param name="filter_size_surf" type="double" value="0.5" />
+  <param name="filter_size_map" type="double" value="0.5" />
+  <param name="cube_side_length" type="double" value="1000" />
+  <param name="runtime_pos_log_enable" type="bool" value="0" />
+
+  <!-- 仿真必须使用 sim time，与 Gazebo 时间轴一致 -->
+  <param name="use_sim_time" value="true" />
+
+  <node pkg="fast_lio" type="fastlio_mapping" name="laserMapping" output="screen" />
+
+  <group if="$(arg rviz)">
+    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz_mid360" args="-d $(find fast_lio)/rviz_cfg/loam_livox.rviz" />
+  </group>
+</launch>

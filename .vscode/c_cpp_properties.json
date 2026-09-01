@@ -1,0 +1,40 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/lxs/work_place/3d-navi/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/lxs/work_place/3d-navi/src/planner/bspline_opt/include/**",
+        "/home/lxs/work_place/3d-navi/src/planner/plan_manage/include/**",
+        "/home/lxs/work_place/3d-navi/src/Mid360_imu_sim/include/**",
+        "/home/lxs/work_place/3d-navi/src/uav_simulator/mockamap/include/**",
+        "/home/lxs/work_place/3d-navi/src/uav_simulator/Utils/multi_map_server/include/**",
+        "/home/lxs/work_place/3d-navi/src/planner/path_searching/include/**",
+        "/home/lxs/work_place/3d-navi/src/planner/plan_env/include/**",
+        "/home/lxs/work_place/3d-navi/src/uav_simulator/Utils/pose_utils/include/**",
+        "/home/lxs/work_place/3d-navi/src/uav_simulator/Utils/quadrotor_msgs/include/**",
+        "/home/lxs/work_place/3d-navi/src/uav_simulator/so3_control/include/**",
+        "/home/lxs/work_place/3d-navi/src/uav_simulator/so3_quadrotor_simulator/include/**",
+        "/home/lxs/work_place/3d-navi/src/planner/traj_utils/include/**",
+        "/home/lxs/work_place/3d-navi/src/uav_simulator/Utils/uav_utils/include/**",
+        "/home/lxs/work_place/3d-navi/src/unitree_guide/unitree_ros/unitree_controller/include/**",
+        "/home/lxs/work_place/3d-navi/src/unitree_guide/unitree_guide/unitree_guide/include/**",
+        "/home/lxs/work_place/3d-navi/src/unitree_guide/unitree_ros/unitree_legged_control/include/**",
+        "/home/lxs/work_place/3d-navi/src/unitree_guide/unitree_ros_to_real/unitree_legged_real/include/**",
+        "/home/lxs/work_place/3d-navi/src/unitree_guide/unitree_ros_to_real/unitree_legged_sdk/include/**",
+        "/home/lxs/work_place/3d-navi/src/unitree_guide/unitree_guide/unitree_actuator_sdk/unitree_motor_ctrl/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

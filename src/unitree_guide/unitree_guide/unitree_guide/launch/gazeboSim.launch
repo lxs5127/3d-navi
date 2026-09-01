@@ -11,7 +11,12 @@
     <arg name="debug" default="false"/>
     <!-- Debug mode will hung up the robot, use "true" or "false" to switch it. -->
     <arg name="user_debug" default="false"/>
-    
+
+    <!-- 是否由 state_from_gazebo 发布 map->odom / odom->base TF。
+         默认 false: 使用 FAST_LIO_LOCALIZATION_HUMANOID (open3d_loc) 定位时由它发布 map TF，
+         避免两个广播源冲突 (真值 TF 只用于调试时才开 true) -->
+    <arg name="gazebo_publish_tf" default="false"/>
+
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" value="$(find unitree_gazebo)/worlds/$(arg wname).world"/>
         <arg name="debug" value="$(arg debug)"/>
@@ -35,6 +40,7 @@
     
     <node pkg="unitree_guide" type="state_from_gazebo" name="state_from_gazebo" args="0 9 0 0 0 0" output="screen">
         <param name="robot_name" value="$(arg rname)" />
+        <param name="publish_tf" value="$(arg gazebo_publish_tf)" />
     </node>
 
     
@@ -77,6 +83,8 @@
 
     <!-- launch 文件 -->
     <!-- 如果是仿真环境，启动mid360的点云扫描转化enable_pointcloud2livox -->
+    <!-- 注: open3d_loc 定位节点也会发布 /scan (PointCloud2, 调试用), 但 ROS1 按 md5sum
+         校验类型, PointCloud 订阅者不会误连 PointCloud2 发布者, 无需 remap -->
     <node pkg="unitree_guide" type="pointcloud2livox.py" name="pointcloud2livox" output="screen">
         <param name="laser_blind" value="0.5" />
         <param name="min_angle" value="-7"/>

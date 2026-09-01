@@ -14,13 +14,13 @@ import numpy as np
 from threading import Lock
 
 from sensor_msgs.msg import PointCloud, PointCloud2,PointField
-from unitree_guide.msg import CustomMsg, CustomPoint
+from livox_ros_driver2.msg import CustomMsg, CustomPoint
 import sensor_msgs.point_cloud2 as pc2
 from nav_msgs.msg import Odometry
 
 
 SENSOR_FRAME = "odom"    
-ODOM_TOPIC = "/Odometry_gazebo"           
+ODOM_TOPIC = "/Odometry"  # 里程计话题名称        
 m_buf = Lock()
 latest_odom = None
 latest_odom_time = None
@@ -235,7 +235,7 @@ def main():
     rospy.Subscriber('/scan', PointCloud, mmw_handler, queue_size=10)
     rospy.Subscriber(ODOM_TOPIC, Odometry, odom_callback, queue_size=10)
 
-    pub_laser_livox = rospy.Publisher('/livox/lidar2', CustomMsg, queue_size=10)
+    pub_laser_livox = rospy.Publisher('/livox/lidar', CustomMsg, queue_size=10)
 
     pub_laser_cloud = rospy.Publisher("/livox/Pointcloud2", PointCloud2, queue_size=10)
 

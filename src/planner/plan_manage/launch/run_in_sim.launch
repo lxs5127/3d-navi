@@ -5,7 +5,12 @@
   <arg name="map_size_z" value="50.0"/>
 
   <!-- topic of your odometry such as VIO or LIO -->
-  <arg name="odom_topic" value="/Odometry_gazebo" />
+  <!-- 使用 FAST_LIO_LOCALIZATION_HUMANOID 时, /baselink2map 是 open3d_loc 配准到
+       先验地图后的 map 系里程计, 起点即机器人真实位置 (不再是 camera_init 原点)。
+       用原始 fastlio /Odometry 时, 规划起点会在 camera_init 原点, 与 Gazebo map 系差一个出生点偏移 -->
+  <arg name="use_loc_odom" default="true"/>
+  <arg name="odom_topic" value="/Odometry" if="$(eval not use_loc_odom)"/>
+  <arg name="odom_topic" value="/baselink2map" if="$(arg use_loc_odom)"/>
   <!-- <node pkg="ego_planner" name="odometry_transform" type="odometry_transform" output="screen"/> -->
 
   <!-- main algorithm params -->
@@ -15,8 +20,7 @@
     <arg name="map_size_y_" value="$(arg map_size_y)"/>
     <arg name="map_size_z_" value="$(arg map_size_z)"/>
     <arg name="odometry_topic" value="$(arg odom_topic)"/>
-    <arg name="lidar_frame_id" value="map"/>
-    <!-- <arg name="lidar_frame_id" value="camera_init"/> -->
+    <arg name="lidar_frame_id" value="camera_init"/>
     <!-- Robot height -->
 
     <!-- camera pose: transform of camera frame in the world frame -->
@@ -27,8 +31,9 @@
 
     <!-- topic of point cloud measurement, such as from LIDAR  -->
     <!-- don't set camera pose and depth, if you already set this one! -->
-    <arg name="cloud_topic" value="/livox/Pointcloud2"/>
-    <!-- <arg name="cloud_topic" value="/cloud_registered"/> -->
+    <!-- HUMANOID fastlio 的注册点云话题带 _1 后缀, 与 /Odometry_loc 同源 (camera_init≡odom≡map 由定位 TF 保证) -->
+    <arg name="cloud_topic" value="/cloud_registered" if="$(eval not use_loc_odom)"/>
+    <arg name="cloud_topic" value="/cloud_registered_1" if="$(arg use_loc_odom)"/>
 
     <!-- intrinsic params of the depth camera -->
     <arg name="cx" value="321.04638671875"/>
@@ -71,7 +76,7 @@
     <arg name="point4_x" value="-15.0" />
     <arg name="point4_y" value="0.0" />
     <arg name="point4_z" value="0.5" />
-    
+
   </include>
 
   <!-- trajectory server -->
