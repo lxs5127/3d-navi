@@ -1,28 +1,5 @@
 # 3D 导航仿真项目
 
-## 项目介绍
-本项目通过优化融合 [PCT-planner](https://github.com/byangw/PCT_planner.git) 和 [ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git) 两种路径规划算法实现3D导航，并在实际环境与Gazebo仿真环境中得到验证。此项目中使用了 Unitree A1 机器人模型以及强化学习控制器 [chy2948331536/unitree_guide](https://gitee.com/chy2948331536/unitree_guide)，其中控制器和 PCT-planner 需要 CUDA 支持。
-
-### 3D导航示例
-<div align="center">
-  <img src="/src/image/878355907.gif" width="1000"/>
-</div>
-
-<div align="center">
-  <img src="/src/image/312415131.gif" width="1000"/>
-</div>
-
-
-
-### 3D规划示例
-<div align="center">
-  <img src="/src/image/123141123.gif" width="1000"/>
-</div>
-
-<div align="center">
-  <img src="/src/image/123154231.gif" width="1000"/>
-</div>
-
 ---
 
 ## 下载与依赖
@@ -131,11 +108,3 @@ python3 plan.py --scene Building
 1. 项目代码较为仓促，可能存在不规范或混乱的情况，敬请谅解。
 2. 如发现问题或有任何建议，请及时提交 issue，便于改进。
 3. 本项目基于 [PCT-planner](https://github.com/byangw/PCT_planner.git)、[ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git) 和 [unitree_guide](https://gitee.com/chy2948331536/unitree_guide.git) 构建，仅限学习使用，禁止用于商业用途。
-
----
-
-## 联系方式
-- **Bilibili**：[https://space.bilibili.com/29152879](https://space.bilibili.com/29152879)
-- **邮箱**：1906570332@qq.com
-
-如果您觉得本项目对您有帮助，欢迎在 Gitee 上给我点个 **star**！谢谢支持！
