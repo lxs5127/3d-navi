@@ -99,16 +99,16 @@ cd planner/scripts/
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:home/YOUR-NAME/3d-navi/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
 python3 plan.py --scene Building
 ```
-### 3. 启动 FAST_LIO_LOCALIZATION_HUMANOID（修改适配A1）
-## 启动雷达进行重定位和发布里程计
+### 4. 启动 FAST_LIO_LOCALIZATION_HUMANOID（修改适配A1）
+改进适配的仓库:
+启动雷达进行重定位和发布里程计:
+```bash
 roslaunch open3d_loc localization_3d_g1.launch
-
+```
 > ⚠️ **注意**：如果地图配置更改，需重新生成地图，路径规划器才会重新规划路径。
 
 ---
 
 ## 注意事项
 #注意：这是本人用来学习的仓库，在原作者项目进行了修改
-1. 项目代码较为仓促，可能存在不规范或混乱的情况，敬请谅解。
-2. 如发现问题或有任何建议，请及时提交 issue，便于改进。
-3. 本项目基于 (https://gitee.com/fdsf3e2342/3d-navi)[PCT-planner](https://github.com/byangw/PCT_planner.git)、[ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git) 和 [unitree_guide](https://gitee.com/chy2948331536/unitree_guide.git) 构建，仅限学习使用，禁止用于商业用途。
+本项目基于 (https://gitee.com/fdsf3e2342/3d-navi),[PCT-planner](https://github.com/byangw/PCT_planner.git)、[ego-planner](https://github.com/ZJU-FAST-Lab/ego-planner.git) 和 [unitree_guide](https://gitee.com/chy2948331536/unitree_guide.git) 构建，仅限学习使用，禁止用于商业用途。
