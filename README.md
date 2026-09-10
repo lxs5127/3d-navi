@@ -100,7 +100,7 @@ python3 tomography.py --scene Building
 
 # 发布plan任务，启用interactive_marker_server
 cd planner/scripts/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:home/YOUR-NAME/3d-navi/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/YOUR-NAME/3d-navi/PCT_planner/planner/lib/3rdparty/gtsam-4.1.1/install/lib
 python3 plan.py --scene Building
 ```
 ### 4. 启动 FAST_LIO_LOCALIZATION_HUMANOID（修改适配A1）
