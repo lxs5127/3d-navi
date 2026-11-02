@@ -26,13 +26,15 @@ class SceneBuilding():
     # trav.slope_max = 0.40
     trav.slope_max = 0.4
     # 设置机器狗最大台阶跨越高度，单位为米
-    # trav.step_max = 0.11
+    # trav.step_max = 0.3
     trav.step_max = 0.3
     # 设置可站立区域的最小比例
+    # trav.standable_ratio = 0.5
     trav.standable_ratio = 0.5
     # 设置障碍物成本值
     trav.cost_barrier = 50.0
     # 设置安全边距，单位为米
+    # trav.safe_margin = 0.5
     trav.safe_margin = 0.5
     # 设置膨胀半径，单位为米
     trav.inflation = 0.1

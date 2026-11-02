@@ -52,5 +52,77 @@
             <pose>0 0 0 0 0 0</pose>   <!-- 模型位姿（x,y,z,r,p,y），默认放在原点 -->
         </include>
 
+
+        <!-- Dynamic obstacle on the intermediate platform (world coordinates).
+             Corresponds to odom x=1.0, y=-13.6; floor surface z is about 1.4609 m.
+             Box size: 0.3 x 0.3 x 0.8 m; bottom z=1.461 m.
+             A world-attached prismatic joint keeps the box on a Y-axis track:
+             center y=-4.6 +/- 0.4 m. The whole swept footprint stays on the platform.
+             RandomVelocityPlugin is supplied with Gazebo Classic; no ROS commands are used.
+             Direction/speed changes every 2 seconds of simulation time, up to 0.2 m/s.
+             The box may wait at a track limit until a velocity points back inward. -->
+        <!-- Temporarily disabled: remove this comment wrapper to restore the moving obstacle.
+        <model name="dynamic_platform_box">
+            <pose>1.0 -4.6 1.861 0 0 0</pose>
+            <static>false</static>
+            <allow_auto_disable>false</allow_auto_disable>
+            <link name="box_link">
+                <gravity>true</gravity>
+                <inertial>
+                    <mass>5.0</mass>
+                    <inertia>
+                        <ixx>0.304166667</ixx>
+                        <iyy>0.304166667</iyy>
+                        <izz>0.075</izz>
+                        <ixy>0</ixy>
+                        <ixz>0</ixz>
+                        <iyz>0</iyz>
+                    </inertia>
+                </inertial>
+                <collision name="box_collision">
+                    <geometry>
+                        <box><size>0.3 0.3 0.8</size></box>
+                    </geometry>
+                    <surface>
+                        <friction>
+                            <ode><mu>0.0</mu><mu2>0.0</mu2></ode>
+                        </friction>
+                    </surface>
+                </collision>
+                <visual name="box_visual">
+                    <geometry>
+                        <box><size>0.3 0.3 0.8</size></box>
+                    </geometry>
+                    <material>
+                        <ambient>1.0 0.3 0.05 1</ambient>
+                        <diffuse>1.0 0.3 0.05 1</diffuse>
+                    </material>
+                </visual>
+            </link>
+            <joint name="platform_track" type="prismatic">
+                <parent>world</parent>
+                <child>box_link</child>
+                <axis>
+                    <xyz>0 1 0</xyz>
+                    <limit>
+                        <lower>-0.4</lower>
+                        <upper>0.4</upper>
+                        <effort>100</effort>
+                        <velocity>0.2</velocity>
+                    </limit>
+                </axis>
+            </joint>
+            <plugin name="platform_box_motion" filename="libRandomVelocityPlugin.so">
+                <link>box_link</link>
+                <initial_velocity>0 0.2 0</initial_velocity>
+                <velocity_factor>0.2</velocity_factor>
+                <update_period>2.0</update_period>
+                <min_x>0</min_x><max_x>0</max_x>
+                <min_y>-0.2</min_y><max_y>0.2</max_y>
+                <min_z>0</min_z><max_z>0</max_z>
+            </plugin>
+        </model>
+        -->
+
     </world>
 </sdf>

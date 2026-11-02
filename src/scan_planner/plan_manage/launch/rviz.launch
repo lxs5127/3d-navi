@@ -1,0 +1,4 @@
+<launch>
+  <arg name="frame_id" default="map"/>
+  <node name="scanplanner_rviz" pkg="rviz" type="rviz" args="-d $(find scan_planner)/launch/default.rviz -f $(arg frame_id)" required="true" />
+</launch>

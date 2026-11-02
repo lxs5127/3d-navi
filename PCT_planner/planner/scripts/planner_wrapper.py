@@ -201,7 +201,10 @@ class TomogramPlanner(object):
         self.end_idx[0] = end_layer
     
 
-        self.planner.plan(self.start_idx, self.end_idx, True)
+        plan_succeeded = self.planner.plan(self.start_idx, self.end_idx, True)
+        if not plan_succeeded:
+            return None
+
         path_finder: a_star.Astar = self.planner.get_path_finder()
         path = path_finder.get_result_matrix()
         if len(path) == 0:

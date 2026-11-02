@@ -43,8 +43,11 @@ void Astar::Init(const double cost_threshold, const int num_layers,
       grid_map_[i][j].resize(max_x_);
       for (size_t k = 0; k < max_x_; ++k) {
         double height = height_map(j + row_offset, k);
-        double z = static_cast<int>(height / resolution);
-        grid_map_[i][j][k] = Node(Eigen::Vector3i(z, j, k), nullptr);
+        // idx is the unique grid coordinate (layer, row, col).  Height is
+        // stored separately below.  Using height/resolution as idx[0] makes
+        // nodes from different tomogram layers collide in the closed set.
+        grid_map_[i][j][k] =
+            Node(Eigen::Vector3i(static_cast<int>(i), j, k), nullptr);
         grid_map_[i][j][k].cost = cost_map(j + row_offset, k);
         grid_map_[i][j][k].height = height;
         grid_map_[i][j][k].ele = ele_map(j + row_offset, k);
@@ -109,10 +112,10 @@ bool Astar::IsValidNodeCoord(int layer, int y, int x) const {
 bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
   auto t0 = std::chrono::high_resolution_clock::now();
 
-  if (!search_result_.empty()) {
-    Reset();
-    search_result_.clear();
-  }
+  // A previous search may have failed after touching nodes without producing
+  // a result, so node state must be reset unconditionally.
+  Reset();
+  search_result_.clear();
   
   //检测是否起始点和终点都符合要求
   if (!IsValidNodeCoord(start[0],start[2],start[1]) || !IsValidNodeCoord(goal[0],goal[2],goal[1]))
@@ -219,17 +222,6 @@ bool Astar::Search(const Eigen::Vector3i& start, const Eigen::Vector3i& goal) {
       }
     }  
 
-    if (open_set.empty())
-    {
-      /* code */
-      while (current_node->parent != nullptr) {
-        // search_result_.emplace_back(Eigen::Vector3i(
-        //     current_node->layer, current_node->idx[1],
-        //     current_node->idx[2]));
-        search_result_.emplace_back(current_node);
-        current_node = current_node->parent;
-      }
-    }
   }
 
 // 若open_set为空仍未找到终点，说明无路径
@@ -250,10 +242,9 @@ int Astar::DecideLayer(const Node* cur_node) const {
   int j = cur_node->idx[2];
   double cur_height = cur_node->height;
 
-  int best_layer = original_layer;
-  double min_cost = grid_map_[original_layer][i][j].cost;  // 初始化为当前图层的代价
-
-  // 遍历多层偏移（扩大图层搜索范围）
+  // A gateway is encoded in ele: positive goes to the next layer and
+  // negative goes to the previous layer.  Selecting a layer only by minimum
+  // cost loses these transitions and traps the search on the lower floors.
   for (const auto offset : search_layers_offset_) {
     int cur_layer = original_layer + offset;
 
@@ -262,27 +253,21 @@ int Astar::DecideLayer(const Node* cur_node) const {
       continue;
     }
 
-    // 获取当前搜索节点
-    // const Node& search_node = grid_map_[cur_layer][ni][nj];
     const Node& search_node = grid_map_[cur_layer][i][j];
 
-    // 筛选：高度差需在合理范围内（避免高度突变）
     if (std::abs(search_node.height - cur_height) > 0.2) {
-      continue;
-    //便免越界得到空的值
-    }else if (search_node.cost > cost_threshold_ || search_node.cost <=0) {
       continue;
     }
 
-    // 更新最小代价图层
-    if (search_node.cost < min_cost) {
-      min_cost = search_node.cost;
-      best_layer = cur_layer;
+    if (search_node.ele > 0.5) {
+      return std::min(cur_layer + 1, max_layers_ - 1);
+    }
+    if (search_node.ele < -0.5) {
+      return std::max(cur_layer - 1, 0);
     }
   }
 
-  // 若未找到更优图层（如所有邻居都越界或高度差过大），返回原始图层
-  return best_layer;
+  return original_layer;
 }
 
 

@@ -20,7 +20,7 @@ from nav_msgs.msg import Odometry
 
 
 SENSOR_FRAME = "odom"    
-ODOM_TOPIC = "/Odometry"  # 里程计话题名称        
+ODOM_TOPIC = "/Odometry_gazebo"  # 里程计话题名称        
 m_buf = Lock()
 latest_odom = None
 latest_odom_time = None
@@ -166,7 +166,8 @@ def filter_points_by_angle(points, min_angle_deg, max_angle_deg):
 
 
 def mmw_handler(mmw_cloud_msg):
-    global latest_odom, pub_laser_cloud,pub_laser_livox, laser_blind,min_angle,max_angle
+    global latest_odom, pub_laser_cloud, pub_laser_livox
+    global laser_blind, laser_max_range, min_angle, max_angle
 
     with m_buf:
         odom_now = latest_odom
@@ -190,10 +191,13 @@ def mmw_handler(mmw_cloud_msg):
     # Step 2.5: 角度过滤
     angle_filtered_points = filter_points_by_angle(rotated_points, min_angle, max_angle)
 
-    # Step 3: 盲区过滤
+    # Step 3: 有效性和量程过滤。仅使用 blind 会把仿真中的远距离地面交点
+    # 送入 FAST-LIO，这些点会污染地图并拉高回环 ICP fitness score。
     points_np = np.array(angle_filtered_points, dtype=np.float32)
     distances = np.linalg.norm(points_np, axis=1)
-    filtered_points = points_np[distances >= laser_blind].tolist()
+    finite = np.isfinite(points_np).all(axis=1)
+    range_mask = (distances >= laser_blind) & (distances <= laser_max_range)
+    filtered_points = points_np[finite & range_mask].tolist()
 
     # Step 3.5 转为 CustomMsg 并发布
     m_buf.acquire()
@@ -215,7 +219,8 @@ def mmw_handler(mmw_cloud_msg):
 
 
 def main():
-    global pub_laser_cloud,pub_laser_livox,laser_blind,min_angle,max_angle,tf_listener
+    global pub_laser_cloud, pub_laser_livox, laser_blind, laser_max_range
+    global min_angle, max_angle, tf_listener
 
 
     rospy.init_node('pre_mmw_to_odom', anonymous=True)
@@ -225,6 +230,10 @@ def main():
 
     laser_blind = rospy.get_param('~laser_blind', 0.2)  # 盲区半径
     rospy.loginfo(f"Blind range : {laser_blind} m")
+
+    # 室内建图不需要数十米以外的回波；限制量程可去除仿真远地面交点。
+    laser_max_range = rospy.get_param('~laser_max_range', 30.0)
+    rospy.loginfo(f"Maximum range : {laser_max_range} m")
 
 
     min_angle = rospy.get_param('~min_angle', 2.5)  # 默认下限-15度
